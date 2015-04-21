@@ -1,6 +1,6 @@
 /*
-Sniff 200 packets and find which transport layer protocol they carried in IP header;
-which application layer protocol they carried by port.
+Sniff 200 packets and find which transport layer protocol they carry (in IP header),
+and which application layer protocol they carry(by port).
 Print everything above along with IP addr.
 */
 
