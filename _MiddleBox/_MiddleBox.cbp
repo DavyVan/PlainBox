@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="_MiddleBox" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/_MiddleBox" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-lpcap" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/_MiddleBox" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="flowinfo.cpp" />
+		<Unit filename="flowinfo.h" />
+		<Unit filename="flowmgr.cpp" />
+		<Unit filename="flowmgr.h" />
+		<Unit filename="ip4hdr.cpp" />
+		<Unit filename="ip4hdr.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="tcphdr.cpp" />
+		<Unit filename="tcphdr.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

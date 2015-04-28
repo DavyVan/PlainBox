@@ -1,0 +1,20 @@
+CC     = g++
+CFLAGS = -lpcap
+Target = _Middlebox
+Obj    = ip4hdr.o tcphdr.o main.o
+
+$(Target): $(Obj)
+	$(CC) -o $(Target) $(Obj) $(CFLAGS)
+
+ip4hdr.o: ip4hdr.h ip4hdr.cpp
+	$(CC) -c -o ip4hdr.o ip4hdr.cpp $(CFLAGS)
+
+tcphdr.o: tcphdr.h tcphdr.cpp
+	$(CC) -c -o tcphdr.o tcphdr.cpp $(CFLAGS)
+
+main.o: ip4hdr.h tcphdr.h main.cpp
+	$(CC) -c -o main.o main.cpp $(CFLAGS)
+
+.PHONY clean
+clean:
+	-rm $(Target) *.o
