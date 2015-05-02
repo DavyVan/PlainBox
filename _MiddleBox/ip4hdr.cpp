@@ -6,9 +6,9 @@ IP4Hdr::IP4Hdr(const uint8_t* &input)
 {
     //copy IP header to IP4Hder. Notice that Ethernet header was ignored.
     memcpy(&header, input, 20);
-    //skip whole IP header(include options)
-    uint16_t len = header.ihl*4;
-    input+=len;
+    //skip whole IP header(include options)*****DONT DO THIS HERE
+    //uint16_t len = header.ihl*4;
+    //input+=len;
 }
 
 unsigned int IP4Hdr::getHL()

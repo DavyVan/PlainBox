@@ -23,6 +23,7 @@ class FlowInfo
         uint16_t getPort2();
 
         int getStatus();
+        void statusChange(int newStatus);
 
         FlowDataNode* getFlowData();
 
@@ -47,6 +48,7 @@ class FlowInfo
         FlowDataNode *temp_2to1;
 };
 
+//This will be deleted when move cache to App-layer handler
 struct FlowDataNode
 {
     unsigned int length;

@@ -7,17 +7,9 @@ using namespace std;
 
 void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
-    packet+=14;
-    //cout<<packet[0]<<endl;
-    printf("%x\n", packet);
-    IP4Hdr ip4hdr = IP4Hdr(packet);
-    //cout<<packet[0]<<endl;
-    printf("%x\n", packet);
-    TCPHdr tcphdr = TCPHdr(packet);
-    //cout<<packet[0]<<endl;
-    printf("%x\n", packet);
-    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort();//<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
-    cout<<"44444444444444444\n";
+    IP4Hdr ip4hdr = IP4Hdr(packet + 14);
+    TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
+    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 }
 
 int main(int argc, char *argv[])

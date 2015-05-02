@@ -39,8 +39,12 @@
 		<Unit filename="ip4hdr.cpp" />
 		<Unit filename="ip4hdr.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="tcphandler.cpp" />
+		<Unit filename="tcphandler.h" />
 		<Unit filename="tcphdr.cpp" />
 		<Unit filename="tcphdr.h" />
+		<Unit filename="tlshandler.cpp" />
+		<Unit filename="tlshandler.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />
