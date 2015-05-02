@@ -34,10 +34,14 @@
 		</Compiler>
 		<Unit filename="flowinfo.cpp" />
 		<Unit filename="flowinfo.h" />
+		<Unit filename="flowkey.cpp" />
+		<Unit filename="flowkey.h" />
 		<Unit filename="flowmgr.cpp" />
 		<Unit filename="flowmgr.h" />
 		<Unit filename="ip4hdr.cpp" />
 		<Unit filename="ip4hdr.h" />
+		<Unit filename="ipaddr.cpp" />
+		<Unit filename="ipaddr.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="tcphandler.cpp" />
 		<Unit filename="tcphandler.h" />
