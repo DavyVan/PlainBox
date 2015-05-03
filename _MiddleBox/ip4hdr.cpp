@@ -2,7 +2,7 @@
 #include<memory.h>
 #include<arpa/inet.h>
 
-IP4Hdr::IP4Hdr(const uint8_t* &input)
+IP4Hdr::IP4Hdr(const uint8_t* input)
 {
     //copy IP header to IP4Hder. Notice that Ethernet header was ignored.
     memcpy(&header, input, 20);

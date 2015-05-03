@@ -2,7 +2,7 @@
 #include<memory.h>
 #include<netinet/in.h>
 
-TCPHdr::TCPHdr(const uint8_t *&input)
+TCPHdr::TCPHdr(const uint8_t *input)
 {
     //copy TCP header to TCPHder.
     memcpy(&header, input, 20);

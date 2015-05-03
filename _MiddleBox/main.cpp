@@ -7,7 +7,7 @@ using namespace std;
 
 void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
-    IP4Hdr ip4hdr = IP4Hdr(packet + 14);
+    IP4Hdr ip4hdr = IP4Hdr((uint8_t*)packet + 14);
     TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
     cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 }

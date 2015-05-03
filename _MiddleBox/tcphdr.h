@@ -8,7 +8,7 @@
 class TCPHdr
 {
     public:
-        TCPHdr(const uint8_t *&input);
+        TCPHdr(const uint8_t *input);
 
         uint16_t getSrcPort();
         uint16_t getDestPort();
