@@ -23,10 +23,9 @@ uint32_t IP4Hdr::getSrcIP()
 
 string IP4Hdr::getSrcIPstr()
 {
-    char* t;
+    char t[INET_ADDRSTRLEN + 1];
     inet_ntop(AF_INET, &header.saddr, t, INET_ADDRSTRLEN);
-    string ret = t;
-    return ret;
+    return t;
 }
 
 uint32_t IP4Hdr::getDestIP()
@@ -36,10 +35,9 @@ uint32_t IP4Hdr::getDestIP()
 
 string IP4Hdr::getDestIPstr()
 {
-    char* t;
+    char t[INET_ADDRSTRLEN + 1];
     inet_ntop(AF_INET, &header.daddr, t, INET_ADDRSTRLEN);
-    string ret = t;
-    return ret;
+    return t;
 }
 
 uint16_t IP4Hdr::getTotalLen()

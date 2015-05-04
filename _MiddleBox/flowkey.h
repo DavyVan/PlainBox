@@ -6,17 +6,19 @@
 class FlowKey
 {
     public:
-        FlowKey();
+        FlowKey(IPAddr *ip1, uint16_t port1, IPAddr *ip2, uint16_t port2);
 
         friend bool operator< (const FlowKey &a, const FlowKey &b);
-        IPAddr* getIP1();
-        IPAddr* getIP2();
+        IPAddr* getIP1() const;
+        uint16_t getPort1();
+        IPAddr* getIP2() const;
+        uint16_t getPort2();
 
         ~FlowKey();
     private:
-        IPAddr IP1;
+        IPAddr *IP1;
         uint16_t Port1;
-        IPAddr IP2;
+        IPAddr *IP2;
         uint16_t Port2;
 };
 

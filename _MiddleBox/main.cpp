@@ -1,15 +1,46 @@
 #include<pcap.h>
 #include<iostream>
+#include<cstdio>
+#include<memory.h>
 #include"ip4hdr.h"
 #include"tcphdr.h"
-#include<cstdio>
+#include"flowkey.h"
+#include"flowmgr.h"
+#include"flowinfo.h"
+#include"ipaddr.h"
 using namespace std;
 
+FlowMgr flowMgr = FlowMgr();
+
+//Do something when we get a new packet
 void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
-    IP4Hdr ip4hdr = IP4Hdr((uint8_t*)packet + 14);
-    TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
-    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+    //get IP and TCP headers, but above all we must look which IP protocol version will use.
+    uint8_t ip_version;
+    memcpy(&ip_version, packet+14, 8);
+    ip_version>>=4;
+    if(ip_version == 4)
+    {
+        //ipv4
+        IP4Hdr ip4hdr = IP4Hdr(packet + 14);
+        TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());   //NOTICE: we only sniff tcp packet by using pcap filter
+        cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+
+        //Check whether the flow exists or not
+        IPv4Addr ip1 = IPv4Addr(ip4hdr.getSrcIP());
+        uint16_t port1 = tcphdr.getSrcPort();
+        IPv4Addr ip2 = IPv4Addr(ip4hdr.getDestIP());
+        uint16_t port2 = tcphdr.getDestPort();
+        FlowKey key = FlowKey(&ip1, port1, &ip2, port2);
+        cout<<key.getIP1()->getAddr_str()<<endl;
+
+        FlowInfoPtr value = flowMgr.findFlow(key);
+    }
+    else if(ip_version == 6)
+    {
+        //TODO: ipv6
+    }
+
 }
 
 int main(int argc, char *argv[])

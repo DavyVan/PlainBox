@@ -1,6 +1,8 @@
 #ifndef TCPHANDLER_H
 #define TCPHANDLER_H
 
+#include"flowinfo.h"
+
 /*
 * TCPHandler is aim to re-assemble TCP segment into a link list
 * which is consist of FlowDataNode and its head is in FlowInfo.
@@ -16,7 +18,7 @@ class TCPHandler
 
         ~TCPHandler();
     private:
-
+        //maybe there will have a cache, because tcp packet maybe disordered
 };
 
 #endif // TCPHANDLER_H

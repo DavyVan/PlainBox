@@ -11,7 +11,7 @@ using namespace std;
 class IP4Hdr
 {
     public:
-        IP4Hdr(const uint8_t* input);
+        IP4Hdr(const uint8_t* const input);
 
         unsigned int getHL();   //bytes
 

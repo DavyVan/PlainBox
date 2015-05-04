@@ -1,5 +1,7 @@
 #include "ipaddr.h"
 #include<arpa/inet.h>
+#include<memory.h>
+#include<iostream>
 
 IPAddr::IPAddr()
 {
@@ -25,19 +27,25 @@ IPv4Addr::IPv4Addr(uint32_t ip)
 
 uint8_t* IPv4Addr::getAddr_raw()
 {
-    return &ip_;
+    return (uint8_t*)&ip_;
 }
 
-char* IPv4Addr::getAddr_str()
+string IPv4Addr::getAddr_str()
 {
+    std::cout<<"getAddr_str called\n";
     char buf[INET_ADDRSTRLEN + 1] = {0};
     inet_ntop(AF_INET, &ip_, buf, INET_ADDRSTRLEN);
     return buf;
 }
 
-ostream& operator<< (ostream& os, const IPv4Addr &ip)
+ostream& operator<< (ostream& os, IPv4Addr &ip)
 {
     return os << ip.getAddr_str();
+}
+
+bool operator< (const IPv4Addr &a, const IPv4Addr &b)
+{
+    return a.ip_ < b.ip_;
 }
 
 IPv6Addr::IPv6Addr()
@@ -55,15 +63,19 @@ uint8_t* IPv6Addr::getAddr_raw()
     return ip_;
 }
 
-char* IPv6Addr::getAddr_str()
+string IPv6Addr::getAddr_str()
 {
     char buf[INET6_ADDRSTRLEN + 1] = {0};
     inet_ntop(AF_INET6, &ip_, buf, INET6_ADDRSTRLEN);
     return buf;
 }
 
-
-ostream& operator<< (ostream& os, const IPv6Addr &ip)
+ostream& operator<< (ostream& os, IPv6Addr &ip)
 {
     return os << ip.getAddr_str();
+}
+
+bool operator< (const IPv6Addr &a, const IPv6Addr &b)
+{
+    //TODO
 }
