@@ -38,7 +38,7 @@ class IPv6Addr: public IPAddr
     public:
         IPv6Addr();
         IPv6Addr(uint8_t* ip);
-        virtual uint8_t* getAddr_raw();
+        virtual uint8_t* getAddr_raw() const;
         virtual string getAddr_str();
 
         //TODO: friend operator=

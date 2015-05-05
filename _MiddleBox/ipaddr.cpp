@@ -32,7 +32,6 @@ uint8_t* IPv4Addr::getAddr_raw()
 
 string IPv4Addr::getAddr_str()
 {
-    std::cout<<"getAddr_str called\n";
     char buf[INET_ADDRSTRLEN + 1] = {0};
     inet_ntop(AF_INET, &ip_, buf, INET_ADDRSTRLEN);
     return buf;
@@ -58,9 +57,9 @@ IPv6Addr::IPv6Addr(uint8_t* ip)
     memcpy(ip_, ip, 16);
 }
 
-uint8_t* IPv6Addr::getAddr_raw()
+uint8_t* IPv6Addr::getAddr_raw() const
 {
-    return ip_;
+    return const_cast<uint8_t*>(ip_);
 }
 
 string IPv6Addr::getAddr_str()
@@ -77,5 +76,19 @@ ostream& operator<< (ostream& os, IPv6Addr &ip)
 
 bool operator< (const IPv6Addr &a, const IPv6Addr &b)
 {
-    //TODO
+    uint8_t* a_ = a.getAddr_raw();
+    uint8_t* b_ = b.getAddr_raw();
+    for(int i = 0; i < 16; i++)
+    {
+        if(a_[i] < b_[i])
+        {
+            return true;
+        }
+        else if(a_[i] > b_[i])
+        {
+            return false;
+        }
+        else if(a_[i] == b_[i])
+            continue;
+    }
 }

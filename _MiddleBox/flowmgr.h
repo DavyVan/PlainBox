@@ -7,7 +7,7 @@
 #include<boost/shared_ptr.hpp>
 
 typedef boost::shared_ptr<FlowInfo> FlowInfoPtr;
-typedef map<FlowKey, FlowInfoPtr>::iterator map_it;
+typedef map<unsigned long, FlowInfoPtr>::iterator map_it;
 
 class FlowMgr
 {
@@ -21,14 +21,14 @@ class FlowMgr
         FlowInfoPtr findFlow(FlowKey &key);
 
         //Add a new flow when SYN=1, ACK=0 detected.
-        void addNewFlow(FlowKey key);
+        FlowInfoPtr addNewFlow(FlowKey &key);
 
         //When the final FIN=1 detected, delete the flow from FlowMgr.
-        void deleteFlow(FlowKey key);
+        void deleteFlow(FlowKey &key);
 
         ~FlowMgr();
     private:
-        map<FlowKey, FlowInfoPtr> mp;    //the key's values are NULL/default except IPs and Ports.
+        map<unsigned long, FlowInfoPtr> mp;    //the key's values are NULL/default except IPs and Ports.
 };
 
 #endif // FLOWMGR_H

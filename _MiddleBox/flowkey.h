@@ -10,9 +10,10 @@ class FlowKey
 
         friend bool operator< (const FlowKey &a, const FlowKey &b);
         IPAddr* getIP1() const;
-        uint16_t getPort1();
+        uint16_t getPort1() const;
         IPAddr* getIP2() const;
-        uint16_t getPort2();
+        uint16_t getPort2() const;
+        unsigned long map_key_gen();
 
         ~FlowKey();
     private:

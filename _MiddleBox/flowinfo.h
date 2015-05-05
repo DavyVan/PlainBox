@@ -38,22 +38,22 @@ class FlowInfo
         //NOTICE: I haven't worked out a good extensible framework that can handle multi application-layer protocol yet
         //friend TLSHandler tlshandler;  //public and friend is more easily to access its functionalities.
 
-        FlowInfo(FlowKey* key);
+        FlowInfo(FlowKey &key);
 
         FlowKey* getFlowKey();
 
-        int getStatus();
-        void statusChange(int newStatus);
+        FlowStatus getStatus();
+        void statusChange(FlowStatus newStatus);
 
         //FlowDataNode* getFlowData();
 
-        friend bool operator< (const FlowInfo a, const FlowInfo b);
-        friend bool operator== (const FlowInfo a, const FlowInfo b);
+        //friend bool operator< (const FlowInfo a, const FlowInfo b);
+        //friend bool operator== (const FlowInfo a, const FlowInfo b);
         ~FlowInfo();
 
     private:
         FlowKey key;
-        int status;
+        FlowStatus status;
 
         /*I will use the link list only. TCPHandler will add ordered new TCP segment to this
         * and TLSHandler will remove used data away from this link list.

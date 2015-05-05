@@ -32,9 +32,51 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         IPv4Addr ip2 = IPv4Addr(ip4hdr.getDestIP());
         uint16_t port2 = tcphdr.getDestPort();
         FlowKey key = FlowKey(&ip1, port1, &ip2, port2);
-        cout<<key.getIP1()->getAddr_str()<<endl;
 
         FlowInfoPtr value = flowMgr.findFlow(key);
+        if(value)
+        {
+            cout<<"ptr is not empty\n";
+        }
+        else
+            cout<<"ptr is empty!\n";
+
+        cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
+        //manage flow
+        //NOTICE: if the browser keep the tcp alive, then next test will be no tcp connection established
+        if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
+        {
+            value = flowMgr.addNewFlow(key);
+            cout<<"new flow added  "<<value->getStatus()<<endl;
+        }
+        else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
+        {
+            value->statusChange(TCP_WORKING);
+            cout<<"flow changed to tcp_working\n";
+        }
+        else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
+        {
+            value->statusChange(TCP_TERMINATING);
+            cout<<"flow changed to tcp_terminating\n";
+        }
+        else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
+        {
+            flowMgr.deleteFlow(key);
+            cout<<"flow deleted normally\n";
+        }
+        else if(value && tcphdr.isRST())
+        {
+            flowMgr.deleteFlow(key);
+            cout<<"flow deleted c'z reseted\n";
+        }
+        else
+        {
+            return;     //skip this packet
+        }
+
+        //handle tcp payload
+        const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
+        unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
     }
     else if(ip_version == 6)
     {
@@ -99,4 +141,12 @@ int main(int argc, char *argv[])
 
     //start sniff
     pcap_loop(handle, 130, got_packet, NULL);
+    /*IPv4Addr IP1 = IPv4Addr(0x01010101);
+    IPv4Addr IP2 = IPv4Addr(0x02020202);
+    IPv4Addr IP3 = IPv4Addr(0x03030303);
+    IPv4Addr IP4 = IPv4Addr(0x04040404);
+    FlowKey a = FlowKey(&IP1, 443, &IP2, 444);
+    FlowKey b = FlowKey(&IP1, 445, &IP4, 446);
+    cout<<(a<a);*/
+    //cout<<sizeof(ulong);
 }

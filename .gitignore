@@ -1,4 +1,4 @@
 *.layout
-_MiddleBox/obj
+_MiddleBox/obj/
 _MiddleBox/bin
 *.depend
