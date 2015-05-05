@@ -3,6 +3,20 @@
 
 #include"flowinfo.h"
 
+struct TCPDataNode
+{
+    unsigned int length;
+    uint32_t seq;   //seq of the first byte of this TCP segment(the same as the TCP header)
+    uint8_t tcp_payload[2000];
+    TCPDataNode *next;
+};
+
+enum TCPDataDirection
+{
+    _1to2,
+    _2to1
+};
+
 /*
 * TCPHandler is aim to re-assemble TCP segment into a link list
 * which is consist of FlowDataNode and its head is in FlowInfo.
@@ -18,7 +32,9 @@ class TCPHandler
 
         ~TCPHandler();
     private:
-        //maybe there will have a cache, because tcp packet maybe disordered
+        //dis-ordered segment will be stored here.
+        TCPDataNode *temp_1to2;
+        TCPDataNode *temp_2to1;
 };
 
 #endif // TCPHANDLER_H
