@@ -4,9 +4,9 @@
 #include<map>
 #include"flowinfo.h"
 #include"flowkey.h"
-#include<boost/shared_ptr.hpp>
 
-typedef boost::shared_ptr<FlowInfo> FlowInfoPtr;
+
+
 typedef map<unsigned long, FlowInfoPtr>::iterator map_it;
 
 class FlowMgr

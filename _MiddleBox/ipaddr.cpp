@@ -92,3 +92,13 @@ bool operator< (const IPv6Addr &a, const IPv6Addr &b)
             continue;
     }
 }
+
+bool equalto(uint8_t* a, uint8_t *b, unsigned int length)
+{
+    for(int i = 0; i < length; i++)
+    {
+        if(a[i] != b[i])
+            return false;
+    }
+    return true;
+}

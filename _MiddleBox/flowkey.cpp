@@ -49,7 +49,7 @@ FlowKey::~FlowKey()
     //dtor
 }
 
-bool operator< (const FlowKey &a, const FlowKey &b)
+/*bool operator< (const FlowKey &a, const FlowKey &b)
 {
     IPAddr* a_ = a.getIP1();
     IPAddr* b_ = b.getIP1();
@@ -82,7 +82,7 @@ bool operator< (const FlowKey &a, const FlowKey &b)
         //if IP address both are same, compare the ports
         return a.getPort1() < b.getPort1();
     }
-}
+}*/
 
 IPAddr* FlowKey::getIP1() const
 {

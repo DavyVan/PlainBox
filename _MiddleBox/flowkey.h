@@ -8,7 +8,7 @@ class FlowKey
     public:
         FlowKey(IPAddr *ip1, uint16_t port1, IPAddr *ip2, uint16_t port2);
 
-        friend bool operator< (const FlowKey &a, const FlowKey &b);
+        //friend bool operator< (const FlowKey &a, const FlowKey &b);
         IPAddr* getIP1() const;
         uint16_t getPort1() const;
         IPAddr* getIP2() const;

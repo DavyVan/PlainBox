@@ -77,6 +77,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         //handle tcp payload
         const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
         unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
+        value->handleTCPPacket(&ip1, port1, &ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
     }
     else if(ip_version == 6)
     {

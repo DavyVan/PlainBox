@@ -36,6 +36,8 @@
 		<Compiler>
 			<Add option="-Wall" />
 		</Compiler>
+		<Unit filename="applayerhandler.cpp" />
+		<Unit filename="applayerhandler.h" />
 		<Unit filename="flowinfo.cpp" />
 		<Unit filename="flowinfo.h" />
 		<Unit filename="flowkey.cpp" />
@@ -47,12 +49,11 @@
 		<Unit filename="ipaddr.cpp" />
 		<Unit filename="ipaddr.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="tcpdatastructure.h" />
 		<Unit filename="tcphandler.cpp" />
 		<Unit filename="tcphandler.h" />
 		<Unit filename="tcphdr.cpp" />
 		<Unit filename="tcphdr.h" />
-		<Unit filename="tlshandler.cpp" />
-		<Unit filename="tlshandler.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

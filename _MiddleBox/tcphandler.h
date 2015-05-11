@@ -1,21 +1,12 @@
 #ifndef TCPHANDLER_H
 #define TCPHANDLER_H
 
-#include"flowinfo.h"
+#include<arpa/inet.h>
+#include"tcpdatastructure.h"
+#include"applayerhandler.h"
 
-struct TCPDataNode
-{
-    unsigned int length;
-    uint32_t seq;   //seq of the first byte of this TCP segment(the same as the TCP header)
-    uint8_t tcp_payload[2000];
-    TCPDataNode *next;
-};
 
-enum TCPDataDirection
-{
-    _1to2,
-    _2to1
-};
+
 
 /*
 * TCPHandler is aim to re-assemble TCP segment into a link list
@@ -27,14 +18,22 @@ class TCPHandler
     public:
         TCPHandler();
 
-        //Maybe static
-        void newPacket(FlowInfo flowinfo, uint8_t *payload);
+        void reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq);
 
         ~TCPHandler();
     private:
+        uint32_t current_seq[2];
+        uint32_t next_seq[2];
+        TCPDataNode *temp[2];
+        /*uint32_t current_seq_1to2;
+        uint32_t next_seq_1to2;
+        uint32_t current_seq_2to1;
+        uint32_t next_seq_2to1;
         //dis-ordered segment will be stored here.
         TCPDataNode *temp_1to2;
         TCPDataNode *temp_2to1;
+        */
+        AppLayerHandler* applayerhandler;
 };
 
 #endif // TCPHANDLER_H

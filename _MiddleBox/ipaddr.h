@@ -48,4 +48,6 @@ class IPv6Addr: public IPAddr
         uint8_t ip_[16];
 };
 
+bool equalto(uint8_t* a, uint8_t *b, unsigned int length);
+
 #endif // IPADDR_H

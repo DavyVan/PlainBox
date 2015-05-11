@@ -2,9 +2,12 @@
 #define FLOWINFO_H
 
 #include<netinet/in.h>
-#include"tlshandler.h"
+#include<boost/shared_ptr.hpp>
 #include"ipaddr.h"
 #include"flowkey.h"
+#include"tcphandler.h"
+
+
 
 
 enum FlowStatus
@@ -29,6 +32,8 @@ class FlowInfo
 
         FlowStatus getStatus();
         void statusChange(FlowStatus newStatus);
+        //Call TCPHandler.reAssemblePacket() and decide which direction
+        void handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq);
 
         //FlowDataNode* getFlowData();
 
@@ -39,8 +44,9 @@ class FlowInfo
     private:
         FlowKey key;
         FlowStatus status;
+        TCPHandler tcphandler;
 };
 
-
+typedef boost::shared_ptr<FlowInfo> FlowInfoPtr;
 
 #endif // FLOWINFO_H
