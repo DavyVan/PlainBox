@@ -4,6 +4,7 @@
 #include<iostream>
 #include<string>
 #include<netinet/in.h>
+#include<boost/shared_ptr.hpp>
 
 using namespace std;
 
@@ -49,5 +50,9 @@ class IPv6Addr: public IPAddr
 };
 
 bool equalto(uint8_t* a, uint8_t *b, unsigned int length);
+
+typedef boost::shared_ptr<IPAddr> IPAddrPtr;
+typedef boost::shared_ptr<IPv4Addr> IPv4AddrPtr;
+typedef boost::shared_ptr<IPv6Addr> IPv6AddrPtr;
 
 #endif // IPADDR_H

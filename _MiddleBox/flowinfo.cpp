@@ -1,7 +1,8 @@
+#include<iostream>
 #include "flowinfo.h"
 
-FlowInfo::FlowInfo(FlowKey &key)
-    :key(key.getIP1(), key.getPort1(), key.getIP2(), key.getPort2())
+FlowInfo::FlowInfo(FlowKey &key_)
+    :key(key_.getIP1(), key_.getPort1(), key_.getIP2(), key_.getPort2())
     , status(TCP_HANDSHAKING)
 {
     //ctor
@@ -33,10 +34,20 @@ void FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, 
     TCPDataDirection direction;
     if(typeid(*srcIP) == typeid(IPv4Addr) && typeid(*key.getIP1()) == typeid(IPv4Addr))
     {
+        std::cout<<"------------start handle TCP packet-----------------\n";
+        std::cout<<key.getIP1()->getAddr_str()<<" "<<key.getIP2()->getAddr_str()<<endl;
         if(equalto(srcIP->getAddr_raw(), key.getIP1()->getAddr_raw(), 4))
+        {
             direction = _1to2;
+            std::cout<<"111111111111111to2\n";
+            std::cout<<srcIP->getAddr_str()<<" "<<key.getIP1()->getAddr_str()<<endl;
+        }
         else if(equalto(srcIP->getAddr_raw(), key.getIP2()->getAddr_raw(), 4))
+        {
             direction = _2to1;
+            std::cout<<"2222222222222222to1\n";
+            std::cout<<srcIP->getAddr_str()<<" "<<key.getIP2()->getAddr_str()<<" "<<key.getIP1()->getAddr_str()<<endl;
+        }
     }
     else if(typeid(*srcIP) == typeid(IPv6Addr) && typeid(*key.getIP1()) == typeid(IPv6Addr))
     {

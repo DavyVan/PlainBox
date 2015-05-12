@@ -27,11 +27,11 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
         //Check whether the flow exists or not
-        IPv4Addr ip1 = IPv4Addr(ip4hdr.getSrcIP());
+        IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
         uint16_t port1 = tcphdr.getSrcPort();
-        IPv4Addr ip2 = IPv4Addr(ip4hdr.getDestIP());
+        IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
         uint16_t port2 = tcphdr.getDestPort();
-        FlowKey key = FlowKey(&ip1, port1, &ip2, port2);
+        FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
         FlowInfoPtr value = flowMgr.findFlow(key);
         if(value)
@@ -47,7 +47,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
         {
             value = flowMgr.addNewFlow(key);
-            cout<<"new flow added  "<<value->getStatus()<<endl;
+            cout<<"new flow added  "<<endl;
         }
         else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
         {
@@ -63,21 +63,32 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         {
             flowMgr.deleteFlow(key);
             cout<<"flow deleted normally\n";
+            return;
         }
         else if(value && tcphdr.isRST())
         {
             flowMgr.deleteFlow(key);
             cout<<"flow deleted c'z reseted\n";
         }
+        else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
+        {
+            //handle tcp payload
+            const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
+            unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
+            cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
+            cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
+            cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+            cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+            if(tcp_payload_len != 0)
+                value->handleTCPPacket(&ip1, port1, &ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+        }
         else
         {
+            cout<<"this pkt is skiped\n";
             return;     //skip this packet
         }
 
-        //handle tcp payload
-        const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
-        unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
-        value->handleTCPPacket(&ip1, port1, &ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+
     }
     else if(ip_version == 6)
     {

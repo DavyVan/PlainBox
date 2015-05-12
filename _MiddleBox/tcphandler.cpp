@@ -52,7 +52,7 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
         if(srcPort == 443 || destPort == 443)
         {
             applayerhandler = new TLSHandler();
-            applayerhandler->parse(node);
+            applayerhandler->parse(node, direction);
         }
     }
     else if(next_seq[direction] != seq)

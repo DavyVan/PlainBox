@@ -22,7 +22,7 @@ struct TLSRec
     uint8_t content_type;
     uint16_t version;   //byte order problem
     unsigned int length;
-    uint8_t tls_payload[20000];
+    uint8_t tls_payload[70000];
 };
 
 //More status to be added/modified
@@ -35,12 +35,6 @@ enum TLSStatus
     WORKING
 };
 
-enum TCPDataDirection
-{
-    _1to2,
-    _2to1
-};
-
 class TLSHandler: public AppLayerHandler
 {
     public:
@@ -50,8 +44,8 @@ class TLSHandler: public AppLayerHandler
         void changeStatus(TLSStatus newStatus);
         TLSStatus getStatus();
     private:
-        uint8_t temp[2][20000];
-        unsigned int temp_length[2];   //the final valide bytes of the cache
+        uint8_t temp[2][70000];
+        unsigned int temp_length[2];
         TLSStatus status;
 };
 

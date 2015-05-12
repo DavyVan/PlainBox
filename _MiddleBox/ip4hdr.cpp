@@ -42,7 +42,8 @@ string IP4Hdr::getDestIPstr()
 
 uint16_t IP4Hdr::getTotalLen()
 {
-    return header.tot_len;
+    uint16_t ret = ntohs(header.tot_len);
+    return ret;
 }
 
 uint8_t IP4Hdr::getProtocol()
