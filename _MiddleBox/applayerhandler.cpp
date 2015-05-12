@@ -21,6 +21,11 @@ TLSHandler::TLSHandler()
     status = INITIAL;
 }
 
+TLSHandler::~AppLayerHandler()
+{
+
+}
+
 void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
 {
     while(head != NULL)     //pick a TCP payload

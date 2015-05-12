@@ -13,7 +13,7 @@ class AppLayerHandler
         AppLayerHandler();
         virtual void* parse(TCPDataNode *head, TCPDataDirection direction) = 0;
         virtual void process(void *record) = 0;
-        ~AppLayerHandler();
+        virtual ~AppLayerHandler() = 0;
     private:
 };
 
@@ -43,6 +43,7 @@ class TLSHandler: public AppLayerHandler
         virtual void process(void *record);
         void changeStatus(TLSStatus newStatus);
         TLSStatus getStatus();
+        ~TLSHandler();
     private:
         uint8_t temp[2][70000];
         unsigned int temp_length[2];

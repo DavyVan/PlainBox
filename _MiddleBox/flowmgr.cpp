@@ -27,11 +27,8 @@ FlowInfoPtr FlowMgr::findFlow(FlowKey &key)
 
 FlowInfoPtr FlowMgr::addNewFlow(FlowKey &key)
 {
-    std::cout<<"1\n";
     FlowInfoPtr info_ptr(new FlowInfo(key));
-    std::cout<<"2\n";
     mp[key.map_key_gen()] = info_ptr;
-    std::cout<<mp.size()<<endl;
     return info_ptr;
 }
 

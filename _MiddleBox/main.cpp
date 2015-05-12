@@ -80,7 +80,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
             cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
             if(tcp_payload_len != 0)
-                value->handleTCPPacket(&ip1, port1, &ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
         }
         else
         {

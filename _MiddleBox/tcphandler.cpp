@@ -47,6 +47,7 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
         }
         q->next = NULL;
         temp[direction] = p;
+        next_seq[direction] = p_seq;
 
         //application layer processing
         if(srcPort == 443 || destPort == 443)

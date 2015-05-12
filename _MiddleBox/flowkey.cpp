@@ -18,13 +18,11 @@ FlowKey::FlowKey(IPAddr *ip1, uint16_t port1, IPAddr *ip2, uint16_t port2)
     {
         if(ip1_[i] < ip2_[i])
         {
-            std::cout<<"+++++++++++++++++++++++++++++++++ip1 < ip2\n";
             smaller = true;
             break;
         }
         else if(ip1_[i] > ip2_[i])
         {
-            std::cout<<"+++++++++++++++++++++++++++++++++ip1 > ip2\n";
             smaller = false;
             break;
         }
@@ -45,7 +43,6 @@ FlowKey::FlowKey(IPAddr *ip1, uint16_t port1, IPAddr *ip2, uint16_t port2)
         Port2 = port1;
         Port1 = port2;
     }
-    std::cout<<IP1->getAddr_str()<<" "<<IP2->getAddr_str()<<endl;
 }
 
 FlowKey::~FlowKey()
