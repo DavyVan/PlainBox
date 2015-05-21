@@ -21,7 +21,7 @@ TLSHandler::TLSHandler()
     status = INITIAL;
 }
 
-TLSHandler::~AppLayerHandler()
+TLSHandler::~TLSHandler()
 {
 
 }
@@ -30,6 +30,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
 {
     while(head != NULL)     //pick a TCP payload
     {
+        cout<<"TCP packet sequence is: "<<head->seq<<endl;
         unsigned int tcp_length = head->length;
         unsigned int offset = 0;
         if(temp_length[direction] == 0)     //if there is a imcompleted TLS record in cache
@@ -50,7 +51,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
                 //Check if there is a completed TLS record in this TCP payload
                 if(length+5 <= tcp_length)
                 {
-                    TLSRec rec;
+                    TLSRec rec;     //NOTICE: this instance will be destructured out of this scope.
                     rec.content_type = content_type;
                     rec.version = version;
                     rec.length = length;
@@ -63,9 +64,9 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
                 }
                 else
                 {
-                    //TODO: No completed TLS record in this TCP payload, put it in cache
                     memcpy(temp[direction], head->tcp_payload + offset, tcp_length);
                     temp_length[direction] = tcp_length;
+                    cout<<"No completed TLS record in this TCP payload, put it in cache, and temp_length:"<<temp_length[direction]<<endl;
 
                     tcp_length = 0;     //end the loop, continue to next tcp payload
                 }
@@ -141,10 +142,12 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
             {
                 //still not a completed TLS record, put current TCP payload into cache.
                 memcpy(temp[direction]+temp_length[direction], head->tcp_payload, tcp_length);
+                temp_length[direction] += tcp_length;
             }
         }
         //delete and move head on
         TCPDataNode *p = head->next;
+        head->next = NULL;
         delete(head);
         head = p;
     }

@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
     pcap_pkthdr pkthdr;
     const u_char *packet;
     bpf_program fp;
-    char filter_exp[] = "tcp";  //tcp only
+    char filter_exp[] = "tcp port 443";  //tcp only
     bpf_u_int32 mask;
     bpf_u_int32 net;
 

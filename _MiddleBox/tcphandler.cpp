@@ -1,5 +1,7 @@
 #include<memory.h>
+#include<iostream>
 #include "tcphandler.h"
+using namespace std;
 
 TCPHandler::TCPHandler()
 {
@@ -50,13 +52,14 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
         next_seq[direction] = p_seq;
 
         //application layer processing
-        if(srcPort == 443 || destPort == 443)
+        if(applayerhandler == NULL && (srcPort == 443 || destPort == 443))
         {
             applayerhandler = new TLSHandler();
-            applayerhandler->parse(node, direction);
         }
+        if(applayerhandler != NULL)
+            applayerhandler->parse(node, direction);
     }
-    else if(next_seq[direction] != seq)
+    else if(next_seq[direction] < seq)
     {
         //dis-ordered
         //construct TCPDataNode
@@ -69,8 +72,13 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
         //insert it into temp
         TCPDataNode *q = NULL;
         TCPDataNode *p = temp[direction];
-        while(p != NULL && node->seq > p->seq)
+        while(p != NULL && node->seq >= p->seq)
         {
+            if(node->seq == p->seq)
+            {
+                cout<<"This packet is skiped because there is a same packet(same seq)"<<endl;
+                return;
+            }
             q = p;
             p = p->next;
         }
