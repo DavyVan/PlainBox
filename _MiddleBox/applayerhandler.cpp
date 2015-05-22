@@ -1,4 +1,5 @@
 #include<memory.h>
+#include<cstdio>
 #include<iostream>
 #include "applayerhandler.h"
 
@@ -19,6 +20,9 @@ TLSHandler::TLSHandler()
     memset(temp, 0, 70000*2);
     memset(temp_length, 0, 2);
     status = INITIAL;
+    client_random = NULL;
+    server_random = NULL;
+    cipher_suite = 0;
 }
 
 TLSHandler::~TLSHandler()
@@ -52,6 +56,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
                 if(length+5 <= tcp_length)
                 {
                     TLSRec rec;     //NOTICE: this instance will be destructured out of this scope.
+                    memset(rec.tls_payload, 0, 70000);
                     rec.content_type = content_type;
                     rec.version = version;
                     rec.length = length;
@@ -180,7 +185,44 @@ void TLSHandler::process(void *record)
     }
     else if(rec->content_type == 22)
     {
-        cout<<"HANDSHAKE"<<endl;
+        cout<<"HANDSHAKE - ";
+        uint8_t handShakeType = 255;
+        uint32_t length = 0;    //HandShakeType & length
+        memcpy(&length, rec->tls_payload, 4);
+        length = ntohl(length);
+        printf("%4x\n", length);
+        if((length & 0xff000000) == 0x01000000)   //client hello
+        {
+            //length = length & 0x00ffffff;
+            cout<<"Client Hello\n";
+            uint8_t cr[28] = {0};
+            memcpy(cr, rec->tls_payload+4+6, 28);
+            setClientRandom(cr);
+            for(int i = 0; i < 28; i++)
+                printf("%02x ", cr[i]);
+            printf("\n");
+        }
+        else if((length & 0xff000000) == 0x02000000)  //server hello
+        {
+            //length = length & 0x00ffffff;
+            cout<<"Server Hello\n";
+            uint8_t sr[28] = {0};
+            memcpy(sr, rec->tls_payload+4+6, 28);
+            setServerRandom(sr);
+            for(int i = 0; i < 28; i++)
+                printf("%02x ", sr[i]);
+            printf("\n");
+            uint8_t session_id_len = 0;
+            memcpy(&session_id_len, rec->tls_payload+4+6+28, 1);
+            uint16_t cs = 0;
+            memcpy(&cs, rec->tls_payload+4+6+28+1+session_id_len, 2);
+            cs = ntohs(cs);
+            printf("%02x\n", cs);
+        }
+        else
+        {
+            printf("%04x\n", length & 0xff000000);
+        }
     }
     else if(rec->content_type == 23)
     {

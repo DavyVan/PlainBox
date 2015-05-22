@@ -5,7 +5,7 @@ FlowInfo::FlowInfo(FlowKey &key_)
     :key(key_.getIP1(), key_.getPort1(), key_.getIP2(), key_.getPort2())
     , status(TCP_HANDSHAKING)
 {
-    //ctor
+
 }
 
 FlowInfo::~FlowInfo()
