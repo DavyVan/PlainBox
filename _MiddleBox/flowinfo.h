@@ -23,6 +23,8 @@ class FlowInfo: public boost::enable_shared_from_this<FlowInfo>
     public:
         //NOTICE: I haven't worked out a good extensible framework that can handle multi application-layer protocol yet
         //friend TLSHandler tlshandler;  //public and friend is more easily to access its functionalities.
+        static unsigned int flow_counter;
+        const unsigned int ID;
 
         FlowInfo(FlowKey &key);
 

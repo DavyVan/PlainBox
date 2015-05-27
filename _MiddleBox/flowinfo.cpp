@@ -1,9 +1,12 @@
 #include<iostream>
 #include "flowinfo.h"
 
+unsigned int FlowInfo::flow_counter = 0;
+
 FlowInfo::FlowInfo(FlowKey &key_)
-    :key(key_.getIP1(), key_.getPort1(), key_.getIP2(), key_.getPort2())
-    , status(TCP_HANDSHAKING)
+    :key(key_.getIP1(), key_.getPort1(), key_.getIP2(), key_.getPort2()),
+    status(TCP_HANDSHAKING),
+    ID(++flow_counter)
 {
 
 }
