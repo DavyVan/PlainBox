@@ -37,7 +37,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
 {
     while(head != NULL)     //pick a TCP payload
     {
-        cout<<"TCP packet sequence is: "<<head->seq<<endl;
+        //cout<<"TCP packet sequence is: "<<head->seq<<endl;
         unsigned int tcp_length = head->length;
         unsigned int offset = 0;
         if(temp_length[direction] == 0)     //if there is a imcompleted TLS record in cache
@@ -74,7 +74,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)
                 {
                     memcpy(temp[direction], head->tcp_payload + offset, tcp_length);
                     temp_length[direction] = tcp_length;
-                    cout<<"No completed TLS record in this TCP payload, put it in cache, and temp_length:"<<temp_length[direction]<<endl;
+                    //cout<<"No completed TLS record in this TCP payload, put it in cache, and temp_length:"<<temp_length[direction]<<endl;
 
                     tcp_length = 0;     //end the loop, continue to next tcp payload
                 }
@@ -193,7 +193,7 @@ void TLSHandler::process(void *record)
         uint32_t length = 0;    //HandShakeType & length
         memcpy(&length, rec->tls_payload, 4);
         length = ntohl(length);
-        printf("%4x\n", length);
+        //printf("%4x\n", length);
         if((length & 0xff000000) == 0x01000000)   //client hello
         {
             //length = length & 0x00ffffff;
@@ -201,8 +201,9 @@ void TLSHandler::process(void *record)
             uint8_t cr[28] = {0};
             memcpy(cr, rec->tls_payload+4+6, 28);
             setClientRandom(cr);
+            cout<<"client random is: ";
             for(int i = 0; i < 28; i++)
-                printf("%02x ", cr[i]);
+                printf("%02x", cr[i]);
             printf("\n");
         }
         else if((length & 0xff000000) == 0x02000000)  //server hello
@@ -212,24 +213,26 @@ void TLSHandler::process(void *record)
             uint8_t sr[28] = {0};
             memcpy(sr, rec->tls_payload+4+6, 28);
             setServerRandom(sr);
+            cout<<"server random is: ";
             for(int i = 0; i < 28; i++)
-                printf("%02x ", sr[i]);
+                printf("%02x", sr[i]);
             printf("\n");
             uint8_t session_id_len = 0;
             memcpy(&session_id_len, rec->tls_payload+4+6+28, 1);
             uint16_t cs = 0;
             memcpy(&cs, rec->tls_payload+4+6+28+1+session_id_len, 2);
             cs = ntohs(cs);
-            printf("%02x\n", cs);
+            printf("cipher_suite is: %02x\n", cs);
         }
         else
         {
-            printf("%04x\n", length & 0xff000000);
+            //printf("%04x\n", length & 0xff000000);
+            cout<<"Encrypted Handshake Record\n";
         }
     }
     else if(rec->content_type == 23)
     {
-        cout<<"APPLICATION_DATA"<<endl;
+        cout<<"APPLICATION_DATA "<<rec->length<<" bytes"<<endl;
     }
     else
     {

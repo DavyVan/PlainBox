@@ -24,7 +24,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         //ipv4
         IP4Hdr ip4hdr = IP4Hdr(packet + 14);
         TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());   //NOTICE: we only sniff tcp packet by using pcap filter
-        cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<"   "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+        //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
         //Check whether the flow exists or not
         IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
@@ -34,53 +34,60 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
         FlowInfoPtr value = flowMgr.findFlow(key);
+        /*
         if(value)
         {
             cout<<"ptr is not empty\n";
         }
         else
-            cout<<"ptr is empty!\n";
+            cout<<"flow is not exist!\n";
+        */
 
-        cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
+        //cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
         //manage flow
         //NOTICE: if the browser keep the tcp alive, then next test will be no tcp connection established
         if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
         {
             value = flowMgr.addNewFlow(key);
-            cout<<"new flow added  "<<endl;
+            //cout<<"new flow added  "<<endl;
         }
         else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
         {
             value->statusChange(TCP_WORKING);
-            cout<<"flow changed to tcp_working\n";
+            //cout<<"flow changed to tcp_working\n";
         }
         else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
         {
             value->statusChange(TCP_TERMINATING);
-            cout<<"flow changed to tcp_terminating\n";
+            //cout<<"flow changed to tcp_terminating\n";
         }
         else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
         {
             flowMgr.deleteFlow(key);
-            cout<<"flow deleted normally\n";
+            //cout<<"flow deleted normally\n";
             return;
         }
         else if(value && tcphdr.isRST())
         {
             flowMgr.deleteFlow(key);
-            cout<<"flow deleted c'z reseted\n";
+            //cout<<"flow deleted c'z reseted\n";
         }
         else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
         {
             //handle tcp payload
             const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
             unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
-            cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
-            cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
-            cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
-            cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+            //cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
+            //cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
+            //cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+            //cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
             if(tcp_payload_len != 0)
+            {
+                cout<<"------------------------------------------------------\n";
+                cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
                 value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+            }
+
         }
         else
         {
@@ -152,7 +159,7 @@ int main(int argc, char *argv[])
     }
 
     //start sniff
-    pcap_loop(handle, 130, got_packet, NULL);
+    pcap_loop(handle, -1, got_packet, NULL);
     /*IPv4Addr IP1 = IPv4Addr(0x01010101);
     IPv4Addr IP2 = IPv4Addr(0x02020202);
     IPv4Addr IP3 = IPv4Addr(0x03030303);
