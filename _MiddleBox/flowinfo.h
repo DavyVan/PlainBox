@@ -8,9 +8,6 @@
 #include"flowkey.h"
 #include"tcphandler.h"
 
-
-
-
 enum FlowStatus
 {
     TCP_HANDSHAKING,
@@ -37,6 +34,8 @@ class FlowInfo: public boost::enable_shared_from_this<FlowInfo>
         void handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq);
 
         boost::shared_ptr<FlowInfo> getThis(){return shared_from_this();};
+
+        void print(TCPDataDirection direction);
 
 
 

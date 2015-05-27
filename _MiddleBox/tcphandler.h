@@ -18,7 +18,7 @@ class TCPHandler
     public:
         TCPHandler();
 
-        void reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq);
+        void reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq, FlowKey* flowkey);
 
         ~TCPHandler();
     private:

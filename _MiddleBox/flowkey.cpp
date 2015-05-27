@@ -143,3 +143,29 @@ unsigned long FlowKey::map_key_gen()
         return ret;
     }
 }
+
+void FlowKey::print(TCPDataDirection direction)
+{
+    if(direction == _1to2)
+    {
+        if(typeid(*IP1) == typeid(IPv4Addr))
+        {
+            cout<<*((IPv4Addr*)IP1)<<":"<<Port1<<" --> "<<*((IPv4Addr*)IP2)<<":"<<Port2<<endl;
+        }
+        else if(typeid(*IP1) == typeid(IPv6Addr))
+        {
+            cout<<*((IPv6Addr*)IP1)<<":"<<Port1<<" --> "<<*((IPv6Addr*)IP2)<<":"<<Port2<<endl;
+        }
+    }
+    else if(direction == _2to1)
+    {
+        if(typeid(*IP1) == typeid(IPv4Addr))
+        {
+            cout<<*((IPv4Addr*)IP2)<<":"<<Port2<<" --> "<<*((IPv4Addr*)IP1)<<":"<<Port1<<endl;
+        }
+        else if(typeid(*IP1) == typeid(IPv6Addr))
+        {
+            cout<<*((IPv6Addr*)IP2)<<":"<<Port2<<" --> "<<*((IPv6Addr*)IP1)<<":"<<Port1<<endl;
+        }
+    }
+}

@@ -52,5 +52,11 @@ void FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, 
             direction = _2to1;
     }
 
-    tcphandler.reAssemblePacket(srcPort, destPort, payload, length, direction, seq);
+    tcphandler.reAssemblePacket(srcPort, destPort, payload, length, direction, seq, &key);
+}
+
+void FlowInfo::print(TCPDataDirection direction)
+{
+    key.print(direction);
+    return;
 }

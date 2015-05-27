@@ -2,6 +2,7 @@
 #define FLOWKEY_H
 
 #include"ipaddr.h"
+#include"tcpdatastructure.h"
 
 class FlowKey
 {
@@ -14,6 +15,8 @@ class FlowKey
         IPAddr* getIP2() const;
         uint16_t getPort2() const;
         unsigned long map_key_gen();
+
+        void print(TCPDataDirection direction);
 
         ~FlowKey();
     private:

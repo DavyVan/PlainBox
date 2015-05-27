@@ -1,6 +1,7 @@
 #include<memory.h>
 #include<iostream>
 #include "tcphandler.h"
+#include"tlshandler.h"
 using namespace std;
 
 TCPHandler::TCPHandler()
@@ -21,7 +22,7 @@ TCPHandler::~TCPHandler()
     delete(applayerhandler);
 }
 
-void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq)
+void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq, FlowKey* flowkey)
 {
     //sequence
     if(next_seq[direction] == 0 || next_seq[direction] == seq)
@@ -57,7 +58,7 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
             applayerhandler = new TLSHandler();
         }
         if(applayerhandler != NULL)
-            applayerhandler->parse(node, direction);
+            applayerhandler->parse(node, direction, flowkey);
     }
     else if(next_seq[direction] < seq)
     {
