@@ -25,4 +25,4 @@ $(Target): $(Obj)
 
 .PHONY: clean
 clean:
-	-rm $(Target) *.o
+	-rm -f $(Target) *.o
