@@ -8,6 +8,7 @@
 #include"flowmgr.h"
 #include"flowinfo.h"
 #include"ipaddr.h"
+#include "tls.h"
 using namespace std;
 
 FlowMgr flowMgr = FlowMgr();
@@ -91,7 +92,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         }
         else
         {
-            cout<<"this pkt is skiped\n";
+            //cout<<"this pkt is skiped\n";
             return;     //skip this packet
         }
 
@@ -104,8 +105,41 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
 }
 
+void* sslfile(void* arg)//Temp by Cong Liu
+{
+    char *filepath = NULL;
+	filepath = getenv("SSLKEYLOGFILE");  //for windows_nt
+	printf("file: %s \n", filepath);
+	if (strlen(filepath) <= 0) {
+	    puts("Error reading SSLKEYLOGFILE, quit thread...");
+	    return NULL;
+	}
+    FILE *fin = fopen(filepath, "r");
+    if (fin) {
+        char buf[1000];
+        while (true) {
+            if (fgets(buf, 999, fin)) {
+                //printf("SSLKEYLOG: ");
+                //puts(buf);
+                if (memcmp(buf, "CLIENT", 6) == 0) {
+                    char buf2[100];
+                    char cr[200] = {0};
+                    char ms[200] = {0};
+                    sscanf(buf, "%s %s %s", buf2, cr, ms);
+                    addMasterSecret(cr, ms);
+                }
+            } else {
+                //printf("NO OUTPUT...\n");
+                //sleep(5);
+            }
+        }
+    }
+}
+
 int main(int argc, char *argv[])
 {
+    pthread_t tid;
+    pthread_create(&tid, NULL, sslfile, NULL);
     //some var that pcap will use
     pcap_t *handle;
     char *device;

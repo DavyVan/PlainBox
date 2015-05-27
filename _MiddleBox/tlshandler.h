@@ -2,6 +2,7 @@
 #define TLSHANDLER_H
 
 #include"applayerhandler.h"
+#include "tls.h"
 
 struct TLSRec
 {
@@ -30,8 +31,8 @@ class TLSHandler: public AppLayerHandler
         void changeStatus(TLSStatus newStatus);
         TLSStatus getStatus();
 
-        void setClientRandom(uint8_t* cr){client_random = new uint8_t[28]; memcpy(client_random, cr, 28);};
-        void setServerRandom(uint8_t* sr){server_random = new uint8_t[28]; memcpy(server_random, sr, 28);};
+        void setClientRandom(uint8_t* cr){client_random = new uint8_t[32]; memcpy(client_random, cr, 32);};
+        void setServerRandom(uint8_t* sr){server_random = new uint8_t[32]; memcpy(server_random, sr, 32);};
         void setCipherSuite(uint16_t cs){cipher_suite = cs;};
         uint8_t* getClientRandom(){return client_random;};
         uint8_t* getServerRandom(){return server_random;};
@@ -48,7 +49,7 @@ class TLSHandler: public AppLayerHandler
         uint8_t* getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction);
 
         /// @brief get plaintext of a record with Application Data
-        void decrypt(uint16_t cs, uint8_t* key, TLSRec* record);
+        void decrypt(uint16_t cs, uint8_t* key, TLSRec* record, TCPDataDirection direction);
 
         ~TLSHandler();
     private:
@@ -58,6 +59,9 @@ class TLSHandler: public AppLayerHandler
         uint8_t* client_random;
         uint8_t* server_random;
         uint16_t cipher_suite;
+        
+        bool key_ready;
+        KeyMaterial km;
 };
 
 #endif // TLSHANDLER_H
