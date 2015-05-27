@@ -217,6 +217,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
             uint16_t cs = 0;
             memcpy(&cs, rec->tls_payload+4+6+28+1+session_id_len, 2);
             cs = ntohs(cs);
+            setCipherSuite(cs);
             printf("cipher_suite is: %02x\n", cs);
 
             //getTLSKey
@@ -246,15 +247,24 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     //TLS record is no need to delete.
 }
 
-uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection directioin)
+uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction)
 {
     cout<<"getTLSKey() is called!\n";
-    flowkey->print(directioin);
+    cout<<"@param cr is client_random\n";
+    cout<<"@param sr is server_random\n";
+    cout<<"@param cs is cipher_suite\n";
+    cout<<"@param flowinfo is replaced by flowkey, because .h file circle\n";
+    cout<<"@param direction indicates the data flow direction\n";
+    cout<<"flowkey is printed below:\n";
+    flowkey->print(direction);
     return NULL;
 }
 
 void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record)
 {
     cout<<"decrypt() is called!\n";
+    cout<<"@param cs is cipher_suite\n";
+    cout<<"@param key is TLS key which is from getTLSKey()\n";
+    cout<<"@param record is TLSRec that is waiting for decrypted\n";
     cout<<"APPLICATION_DATA "<<record->length<<" bytes"<<endl;
 }

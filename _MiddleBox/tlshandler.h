@@ -45,7 +45,7 @@ class TLSHandler: public AppLayerHandler
         /// @param flowkey  alternative choice of FlowInfo
         /// @param direction    data flow direction
         //TODO: return type is to be decided.
-        uint8_t* getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection directioin);
+        uint8_t* getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction);
 
         /// @brief get plaintext of a record with Application Data
         void decrypt(uint16_t cs, uint8_t* key, TLSRec* record);
