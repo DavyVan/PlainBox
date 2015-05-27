@@ -1,7 +1,7 @@
 CC     = g++
 CFLAGS = -lpcap -I /home/fanquan/Desktop/boost_1_58_0
 Target = _Middlebox
-Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o 
+Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o applayerhandler.o tcphandler.o
 
 $(Target): $(Obj)
 	$(CC) -o $(Target) $(Obj) $(CFLAGS)

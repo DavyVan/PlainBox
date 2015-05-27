@@ -27,7 +27,10 @@ TLSHandler::TLSHandler()
 
 TLSHandler::~TLSHandler()
 {
-
+    if(client_random != NULL)
+        delete(client_random);
+    if(server_random != NULL)
+        delete(server_random);
 }
 
 void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction)

@@ -1,5 +1,5 @@
 CC     = g++
-CFLAGS = -lpcap
+CFLAGS = -lpcap -I /home/fanquan/Desktop/boost_1_58_0
 Target = _Middlebox
 Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o 
 
