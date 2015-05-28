@@ -18,6 +18,9 @@ TLSHandler::TLSHandler()
     client_random = NULL;
     server_random = NULL;
     cipher_suite = 0;
+
+    clientIs = 0;
+
     key_ready = false;
 }
 
@@ -194,6 +197,16 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         {
             //length = length & 0x00ffffff;
             cout<<"Client Hello\n";
+
+            //set clientIs
+            if(clientIs == 0)
+            {
+                if(direction == _1to2)
+                    clientIs = 1;
+                else if(direction == _2to1)
+                    clientIs = 2;
+            }
+
             uint8_t cr[32] = {0};
             memcpy(cr, rec->tls_payload+6, 32);
             setClientRandom(cr);
@@ -212,6 +225,16 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         {
             //length = length & 0x00ffffff;
             cout<<"Server Hello\n";
+
+            //set clientIs
+            if(clientIs == 0)
+            {
+                if(direction == _1to2)
+                    clientIs = 2;
+                else if(direction == _2to1)
+                    clientIs = 1;
+            }
+
             uint8_t sr[32] = {0};
             memcpy(sr, rec->tls_payload+6, 32);
             setServerRandom(sr);
@@ -244,7 +267,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         //cout<<"APPLICATION_DATA "<<rec->length<<" bytes"<<endl;
         if(/*TODO: if key exists*/1)
         {
-            decrypt(cipher_suite, NULL, rec, direction);
+            decrypt(cipher_suite, NULL, rec, getAppLayerDataDirection(direction));  // You can get correct direction like this
         }
     }
     else
@@ -264,7 +287,7 @@ uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* f
     cout<<"@param direction indicates the data flow direction\n";*/
     cout<<"flowkey is printed below:\n";
     flowkey->print(direction);
-    
+
     if (!key_ready && cipher_suite == 0x002f) {//Cipher Suite: TLS_RSA_WITH_AES_128_CBC_SHA (0x002f)
         uint8_t* ms = (uint8_t*)getMasterSecret((char*)cr);
         if (ms) {
@@ -278,7 +301,7 @@ uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* f
             unsigned char key_block[1000];
             int kbsize = 0;
             while (kbsize < 40 + 32 + 32) {
-                
+
                 int pos = 0;
                 for (int i = 0; i < curchcnt; ++i)
                     buf[pos++] = curch;
@@ -295,7 +318,7 @@ uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* f
                 kbsize += 16;
             }
             printf("@@ kbsize=%d ch=%c\n", kbsize, curch-1);
-            
+
             km.client_write_key_len = 16;
             memcpy(km.client_write_key, key_block + 20 + 20, 16);
             km.server_write_key_len = 16;
@@ -304,18 +327,24 @@ uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* f
             memcpy(km.client_write_iv, key_block + 20 + 20 + 16 + 16, 16);
             km.server_write_iv_len = 16;
             memcpy(km.server_write_iv, key_block + 20 + 20 + 16 + 16 + 16, 16);
-            
+
             key_ready = true;
         } else {
                 cout << "@@ fail getms\n";
         }
     }
-    
+
     return NULL;
 }
 
-void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, TCPDataDirection direction)
+void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerDataDirection direction)
 {
+    /// You can use like this:
+    /// if(direction == CLIENT_TO_SERVER)
+    ///     cout<<"decrypt() is called! CLIENT_TO_SERVER\n";
+    /// else if(direction == SERVER_TO_CLIENT)
+    ///     cout<<"decrypt() is called! SERVER_TO_CLIENT\n";
+
     if (key_ready && direction == _1to2) {
         cout<<"decrypt() is called!\n";
 /*    cout<<"@param cs is cipher_suite\n";
@@ -329,7 +358,27 @@ void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, TCPDataDirec
 	    AES_cbc_encrypt(record->tls_payload, dec_out, record->length, &dec_key, km.client_write_iv, AES_DECRYPT);
 	    cout << "succ???"<<endl;
 	    for (int i = 0; i < 20 && i < record->length; ++i) putchar(dec_out[i]);
-	    
+
     }
-    
+
+}
+
+AppLayerDataDirection TLSHandler::getAppLayerDataDirection(TCPDataDirection tcpdirection)
+{
+    if(clientIs == 0)
+        return PLACEHOLDER;
+    else if(clientIs == 1)
+    {
+        if(tcpdirection == _1to2)
+            return CLIENT_TO_SERVER;
+        else if(tcpdirection == _2to1)
+            return SERVER_TO_CLIENT;
+    }
+    else if(clientIs == 2)
+    {
+        if(tcpdirection == _1to2)
+            return SERVER_TO_CLIENT;
+        else if(tcpdirection == _2to1)
+            return CLIENT_TO_SERVER;
+    }
 }

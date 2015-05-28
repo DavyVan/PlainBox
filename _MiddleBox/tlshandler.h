@@ -22,6 +22,7 @@ enum TLSStatus
     WORKING
 };
 
+
 class TLSHandler: public AppLayerHandler
 {
     public:
@@ -49,7 +50,7 @@ class TLSHandler: public AppLayerHandler
         uint8_t* getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction);
 
         /// @brief get plaintext of a record with Application Data
-        void decrypt(uint16_t cs, uint8_t* key, TLSRec* record, TCPDataDirection direction);
+        void decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerDataDirection direction);
 
         ~TLSHandler();
     private:
@@ -59,7 +60,10 @@ class TLSHandler: public AppLayerHandler
         uint8_t* client_random;
         uint8_t* server_random;
         uint16_t cipher_suite;
-        
+
+        int clientIs;   //which side is client, 1 for IP1, 2 for IP2. Another idea is store this in FlowKey.
+        AppLayerDataDirection getAppLayerDataDirection(TCPDataDirection tcpdirection);
+
         bool key_ready;
         KeyMaterial km;
 };

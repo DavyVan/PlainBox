@@ -114,6 +114,7 @@ void* sslfile(void* arg)//Temp by Cong Liu
 	    puts("Error reading SSLKEYLOGFILE, quit thread...");
 	    return NULL;
 	}
+
     FILE *fin = fopen(filepath, "r");
     if (fin) {
         char buf[1000];
@@ -134,6 +135,7 @@ void* sslfile(void* arg)//Temp by Cong Liu
             }
         }
     }
+
 }
 
 int main(int argc, char *argv[])

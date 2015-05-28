@@ -9,6 +9,13 @@
 //this might be a problem, existing a include circle.
 //#include"tcphandler.h"
 
+enum AppLayerDataDirection
+{
+    PLACEHOLDER,
+    CLIENT_TO_SERVER,
+    SERVER_TO_CLIENT
+};
+
 class AppLayerHandler
 {
     public:
