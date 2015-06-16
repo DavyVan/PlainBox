@@ -18,6 +18,9 @@
 				</Compiler>
 				<Linker>
 					<Add library="pcap" />
+					<Add library="ssl" />
+					<Add library="pthread" />
+					<Add library="crypto" />
 				</Linker>
 			</Target>
 			<Target title="Release">
@@ -38,6 +41,8 @@
 		</Compiler>
 		<Unit filename="applayerhandler.cpp" />
 		<Unit filename="applayerhandler.h" />
+		<Unit filename="esphandler.cpp" />
+		<Unit filename="esphandler.h" />
 		<Unit filename="flowinfo.cpp" />
 		<Unit filename="flowinfo.h" />
 		<Unit filename="flowkey.cpp" />
@@ -46,6 +51,8 @@
 		<Unit filename="flowmgr.h" />
 		<Unit filename="ip4hdr.cpp" />
 		<Unit filename="ip4hdr.h" />
+		<Unit filename="ip6hdr.cpp" />
+		<Unit filename="ip6hdr.h" />
 		<Unit filename="ipaddr.cpp" />
 		<Unit filename="ipaddr.h" />
 		<Unit filename="main.cpp" />
@@ -54,8 +61,12 @@
 		<Unit filename="tcphandler.h" />
 		<Unit filename="tcphdr.cpp" />
 		<Unit filename="tcphdr.h" />
+		<Unit filename="tls.cpp" />
+		<Unit filename="tls.h" />
 		<Unit filename="tlshandler.cpp" />
 		<Unit filename="tlshandler.h" />
+		<Unit filename="udphdr.cpp" />
+		<Unit filename="udphdr.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

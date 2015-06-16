@@ -9,14 +9,14 @@ using namespace std;
 
 static vector<KeyRecord> vk;
 
-static int hexToBinDigit(char ch)
+int hexToBinDigit(char ch)
 {
     if (ch >= '0' && ch <= '9') return ch - '0';
     if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
     if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
     return 0;
 }
-static int hexToBin(char *src, char *dst)
+int hexToBin(char *src, char *dst)
 {
     int i = 0;
     int j = 0;

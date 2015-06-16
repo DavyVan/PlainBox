@@ -57,7 +57,7 @@ IPv6Addr::IPv6Addr(uint8_t* ip)
     memcpy(ip_, ip, 16);
 }
 
-uint8_t* IPv6Addr::getAddr_raw() const
+uint8_t* IPv6Addr::getAddr_raw()
 {
     return const_cast<uint8_t*>(ip_);
 }
@@ -74,7 +74,7 @@ ostream& operator<< (ostream& os, IPv6Addr &ip)
     return os << ip.getAddr_str();
 }
 
-bool operator< (const IPv6Addr &a, const IPv6Addr &b)
+bool operator< (IPv6Addr &a, IPv6Addr &b)
 {
     uint8_t* a_ = a.getAddr_raw();
     uint8_t* b_ = b.getAddr_raw();

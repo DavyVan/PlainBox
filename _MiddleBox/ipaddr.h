@@ -39,12 +39,12 @@ class IPv6Addr: public IPAddr
     public:
         IPv6Addr();
         IPv6Addr(uint8_t* ip);
-        virtual uint8_t* getAddr_raw() const;
+        virtual uint8_t* getAddr_raw();
         virtual string getAddr_str();
 
         //TODO: friend operator=
         friend ostream& operator<< (ostream& os, IPv6Addr &ip);
-        friend bool operator< (const IPv6Addr &a, const IPv6Addr &b);
+        friend bool operator< (IPv6Addr &a, IPv6Addr &b);
     private:
         uint8_t ip_[16];
 };

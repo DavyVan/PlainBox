@@ -3,12 +3,15 @@
 #include<cstdio>
 #include<memory.h>
 #include"ip4hdr.h"
+#include"ip6hdr.h"
 #include"tcphdr.h"
+#include"udphdr.h"
 #include"flowkey.h"
 #include"flowmgr.h"
 #include"flowinfo.h"
 #include"ipaddr.h"
 #include "tls.h"
+#include"esphandler.h"
 using namespace std;
 
 FlowMgr flowMgr = FlowMgr();
@@ -100,7 +103,63 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
     }
     else if(ip_version == 6)
     {
-        //TODO: ipv6
+        IP6Hdr ip6hdr = IP6Hdr(packet + 14);
+
+        if(ip6hdr.getNextHeader() == 17)    //If it's UDP
+        {
+            UDPHdr _udphdr = UDPHdr(packet + 14 + 40);  //NOTICE: we assumpt no options in ipv6 header
+
+            uint8_t t[16];
+            ip6hdr.getSrcIP(t);
+            IPv6Addr *ip1 = new IPv6Addr(t);
+            ip6hdr.getDestIP(t);
+            IPv6Addr *ip2 = new IPv6Addr(t);
+            uint16_t port1 = _udphdr.getSrcPort();
+            uint16_t port2 = _udphdr.getDestPort();
+
+            if(port1 == 500 || port2 == 500)    //If it's ISAKMP in port 500
+            {
+                cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+
+                FlowKey key = FlowKey(ip1, port1, ip2, port2);
+
+                FlowInfoPtr value = flowMgr.findFlow(key);
+                if(value)
+                    cout<<"ptr is not empty\n";
+                else
+                    cout<<"ptr is empty\n";
+
+                //manage flow, because it's UDP so nothing to do except adding this flow
+                if(!value)
+                {
+                    value = flowMgr.addNewFlow(key);
+                    cout<<"new flow added\n";
+                }
+
+                //no need to process ISAKMP packet here, ESP is more important.
+            }
+        }
+        else if(ip6hdr.getNextHeader() == 50)
+        {
+            uint8_t t[16];
+            ip6hdr.getSrcIP(t);
+            IPv6Addr *ip1 = new IPv6Addr(t);
+            ip6hdr.getDestIP(t);
+            IPv6Addr *ip2 = new IPv6Addr(t);
+            cout<<*ip1<<" --> "<<*ip2<<endl;
+            cout<<"--------------------ESP----------------------\n";
+            //uint8_t *plaint = new uint8_t[10000];
+            uint8_t plaint[10000] = {0};
+            unsigned int plaintlen;
+            if(!ESPHandler::parseAndDecrypt(ip6hdr.getPayloadLen(), packet+14+40, plaint, plaintlen))     //NOTICE: I assumpt that no v6 options header.
+                cout<<"decryption failed!\n";
+            //cout<<hex;
+            cout<<"plaint text length: "<<plaintlen<<endl;
+            for(int i = 0; i < plaintlen; i++)
+                printf("%02x", plaint[i]);
+            cout<<endl;
+        }
+
     }
 
 }
@@ -140,8 +199,8 @@ void* sslfile(void* arg)//Temp by Cong Liu
 
 int main(int argc, char *argv[])
 {
-    pthread_t tid;
-    pthread_create(&tid, NULL, sslfile, NULL);
+    //pthread_t tid;
+    //pthread_create(&tid, NULL, sslfile, NULL);
     //some var that pcap will use
     pcap_t *handle;
     char *device;
@@ -149,19 +208,20 @@ int main(int argc, char *argv[])
     pcap_pkthdr pkthdr;
     const u_char *packet;
     bpf_program fp;
-    char filter_exp[] = "tcp port 443";  //tcp only
+    char filter_exp[] = "";  //tcp only
     bpf_u_int32 mask;
     bpf_u_int32 net;
 
     //find the first network device can be used to sniff
     device = pcap_lookupdev(errbuf);
+
     if(device == NULL)
     {
         //fprintf(stderr, "Couldn't find default device: %s\n", errbuf);
         cout<<"Couldn't find default device: "<<errbuf<<endl;
         return 2;
     }
-
+    device = "eth1";    //NOTICE: I assign the device directely!
     //open a pcap transaction
     handle = pcap_open_live(device, BUFSIZ, 0, 1000, errbuf);
     if(handle == NULL)

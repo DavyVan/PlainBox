@@ -7,16 +7,16 @@ struct KeyRecord {
     char ms[48];//master secret
 };
 
-struct KeyMaterial {    
+struct KeyMaterial {
     unsigned char client_write_key[128];
     int client_write_key_len;
-    
+
     unsigned char server_write_key[128];
     int server_write_key_len;
-    
+
     unsigned char client_write_iv[128];
     int client_write_iv_len;
-    
+
     unsigned char server_write_iv[128];
     int server_write_iv_len;
 

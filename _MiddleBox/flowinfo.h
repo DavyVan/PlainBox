@@ -8,7 +8,7 @@
 #include"flowkey.h"
 #include"tcphandler.h"
 
-enum FlowStatus
+enum FlowStatus     //prefix "TCP_" can be removed
 {
     TCP_HANDSHAKING,
     TCP_WORKING,
