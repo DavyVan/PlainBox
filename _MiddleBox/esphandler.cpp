@@ -44,9 +44,9 @@ bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, ui
     }
 
     cout<<"-------------------------before decrypt-------------------------\n";
-    plaintlen = length - 8 - 16;
+    plaintlen = length - 8 - 16 - 12;
     //plaintlen = 40;
-    decrypt(length-8-16, payload+8+16, km, iv, dest);     //NOTICE: Authentication Data have 12 bytes in this case
+    decrypt(plaintlen, payload+8+16, km, iv, dest);     //NOTICE: Authentication Data have 12 bytes in this case
     return true;
 }
 
@@ -105,6 +105,7 @@ void ESPHandler::decrypt(unsigned int length, const uint8_t* payload, KeyMateria
         //uint8_t iv[16] = {0};
         AES_cbc_encrypt(payload, out, length, &aes_key, iv, AES_DECRYPT);
         memcpy(dest, out, 10000);
+        //TODO: Padding needs to be removed.
         //for(int i = 0; i < length; i++)
         //    printf("0x")
     }

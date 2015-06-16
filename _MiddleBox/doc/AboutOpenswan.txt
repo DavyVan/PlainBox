@@ -1,0 +1,79 @@
+###
+### This file is written by David FAN Quan.
+### To have a better reading experience, please use text editor which supports monospaced font.
+### 
+
+This file is about how to extract SAs infomation out of its database(SADB).
+
+Note: openswan-2.6.43/ is my openswan root directory.
+
+I store all of SAs in a file, 1 line per SA. This file is "/etc/ipsec.key".
+The format is described as follow, in the code, as comment.
+I insert the following code at a function called netlink_add_sa(), 
+so when it add a new SA into database, I will obtain the new SA's data and put it into that file.
+Till now, I can record every child SA(not the ISAKMP SAs) negotiated.
+
+(You can find this source code file in _Middlebox/doc)
+In openswan-2.6.43/programs/pluto/kernel_netlink.c	Line:1039
+static bool netlink_add_sa(struct kernel_sa *sa, bool replace)
+{
+	......
+	[line 1039]
+	/* Added by David FAN Quan
+	 * put keys into a file
+	 * the format is:
+	 * +-------------------------------------------------------------------------------------------------------------------+
+	 * | spi(decimal ,host byte order) | encalg(name) | enckeylen | enckey(hex) | authalg(name) | authkeylen | authkey(hex)|
+	 * +-------------------------------------------------------------------------------------------------------------------+
+	 */
+	const char* filepath = "/etc/ipsec.key";
+	FILE* file = fopen(filepath, "a");
+	if(file)
+	{
+		//convert enckey & authkey from uchar to hex-string
+		//enckey
+		char enckey_hex[100] = {0};
+		int i;
+		for(i = 0; i < sa->enckeylen; i++)
+		{
+			if(sa->enckey[i]/16 < 10)
+				enckey_hex[2*i] = sa->enckey[i]/16 + '0';
+			else
+				enckey_hex[2*i] = sa->enckey[i]/16 + 'a' - 10;
+			if(sa->enckey[i]%16 < 10)
+				enckey_hex[2*i+1] = sa->enckey[i]%16 + '0';
+			else
+				enckey_hex[2*i+1] = sa->enckey[i]%16 + 'a' - 10;
+		}
+
+
+		//authkey
+		char authkey_hex[100] = {0};
+		for(i = 0; i < sa->authkeylen; i++)
+		{
+			if(sa->authkey[i]/16 < 10)
+				authkey_hex[2*i] = sa->authkey[i]/16 + '0';
+			else
+				authkey_hex[2*i] = sa->authkey[i]/16 + 'a' - 10;
+			if(sa->authkey[i]%16 < 10)
+				authkey_hex[2*i+1] = sa->authkey[i]%16 + '0';
+			else
+				authkey_hex[2*i+1] = sa->authkey[i]%16 + 'a' - 10;
+		}
+		
+
+		fprintf(file, "%u %s %u %s %s %u %s\n", 
+			sa->spi,
+			sparse_name(ealg_list, sa->encalg), 
+			sa->enckeylen, enckey_hex, 
+			sparse_name(aalg_list, sa->authalg), 
+			sa->authkeylen, 
+			authkey_hex);
+	}
+	fclose(file);
+	......
+}
+
+In /etc/ipsec.key, data is stored like this:
+2660577824 aes 16 036e0ccd0dc754a55830217f53c36fec sha1 20 2f0c5f13c76942b7f079bdde00e8aa3c348ec016
+803573074 aes 16 4361d25735256c123c046ff25923c464 sha1 20 4c99a98b390a8b1dbcd3ecb7a5e157544e7b9056
