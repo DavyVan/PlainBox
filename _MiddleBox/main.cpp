@@ -84,7 +84,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             //cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
             //cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
             //cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
-            //cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+            //cout<<"tcp_payload_len1="<<tcp_payload_len<<endl;
             if(tcp_payload_len != 0)
             {
                 cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
@@ -139,7 +139,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 //no need to process ISAKMP packet here, ESP is more important.
             }
         }
-        else if(ip6hdr.getNextHeader() == 50)
+        else if(ip6hdr.getNextHeader() == 50)   //If it's ESP
         {
             uint8_t t[16];
             ip6hdr.getSrcIP(t);
@@ -159,7 +159,75 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 printf("%02x", plaint[i]);
             cout<<endl;
         }
+        else if(ip6hdr.getNextHeader() == 6)    //If it's TCP
+        {
+            TCPHdr tcphdr = TCPHdr(packet + 14 + 40);
 
+            uint8_t t[16];
+            ip6hdr.getSrcIP(t);
+            IPv6Addr *ip1 = new IPv6Addr(t);
+            ip6hdr.getDestIP(t);
+            IPv6Addr *ip2 = new IPv6Addr(t);
+            uint16_t port1 = tcphdr.getSrcPort();
+            uint16_t port2 = tcphdr.getDestPort();
+
+            FlowKey key = FlowKey(ip1, port1, ip2, port2);
+            FlowInfoPtr value = flowMgr.findFlow(key);
+
+            if(value)
+                cout<<"ptr is not empty\n";
+            else
+                cout<<"ptr is empty\n";
+
+            //manage flow
+            //copy from corresponding part of ipv4
+            if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
+            {
+                value = flowMgr.addNewFlow(key);
+                cout<<"new flow added  "<<endl;
+            }
+            else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
+            {
+                value->statusChange(TCP_WORKING);
+                cout<<"flow changed to tcp_working\n";
+            }
+            else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
+            {
+                value->statusChange(TCP_TERMINATING);
+                cout<<"flow changed to tcp_terminating\n";
+            }
+            else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
+            {
+                flowMgr.deleteFlow(key);
+                cout<<"flow deleted normally\n";
+                return;
+            }
+            else if(value && tcphdr.isRST())
+            {
+                flowMgr.deleteFlow(key);
+                cout<<"flow deleted c'z reseted\n";
+            }
+            else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
+            {
+                //handle tcp payload
+                const uint8_t* tcp_payload = packet + 14 + 40 + tcphdr.getHL();
+                unsigned int tcp_payload_len = ip6hdr.getPayloadLen() - tcphdr.getHL();
+                cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+                cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+                if(tcp_payload_len != 0)
+                {
+                    cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                    cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                    value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                }
+
+            }
+            else
+            {
+                cout<<"this pkt is skiped\n";
+                return;     //skip this packet
+            }
+        }
     }
 
 }
@@ -208,7 +276,7 @@ int main(int argc, char *argv[])
     pcap_pkthdr pkthdr;
     const u_char *packet;
     bpf_program fp;
-    char filter_exp[] = "";  //tcp only
+    char filter_exp[] = "port 22";  //SSH only
     bpf_u_int32 mask;
     bpf_u_int32 net;
 

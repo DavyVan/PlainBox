@@ -11,9 +11,9 @@
 
 enum AppLayerDataDirection
 {
-    PLACEHOLDER,
     CLIENT_TO_SERVER,
-    SERVER_TO_CLIENT
+    SERVER_TO_CLIENT,
+    PLACEHOLDER
 };
 
 class AppLayerHandler

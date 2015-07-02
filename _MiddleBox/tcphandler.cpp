@@ -2,6 +2,7 @@
 #include<iostream>
 #include "tcphandler.h"
 #include"tlshandler.h"
+#include"sshhandler.h"
 using namespace std;
 
 TCPHandler::TCPHandler()
@@ -57,6 +58,8 @@ void TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uin
         {
             applayerhandler = new TLSHandler();
         }
+        if(applayerhandler == NULL && (srcPort == 22 || destPort == 22))
+            applayerhandler = new SSHHandler();
         if(applayerhandler != NULL)
             applayerhandler->parse(node, direction, flowkey);
     }

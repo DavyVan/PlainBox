@@ -39,7 +39,7 @@ void* TLSHandler::parse(TCPDataNode* head, TCPDataDirection direction, FlowKey* 
         //cout<<"TCP packet sequence is: "<<head->seq<<endl;
         unsigned int tcp_length = head->length;
         unsigned int offset = 0;
-        if(temp_length[direction] == 0)     //if there is a imcompleted TLS record in cache
+        if(temp_length[direction] == 0)
         {
             //nothing in cache
             while(tcp_length > 0)
