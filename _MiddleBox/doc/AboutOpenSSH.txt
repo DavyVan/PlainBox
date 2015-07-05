@@ -1,0 +1,155 @@
+###
+### This file is written by David FAN Quan.
+### To have a better reading experience, please use text editor which supports monospaced font.
+### 
+
+This file is about how to extract session keys from openSSH runtime.
+
+Note: When I use "openssh/", it refers to your openSSH root directory.
+
+I store all of keys in a file, one line per session.
+The file is "/etc/ssh.key", and the format is described 
+as follow(the comments).
+I insert the following code into a function called
+kex_derive_keys(), so when it compute new keys, I will 
+catch these keys and put it into the file above. In theory,
+this way can catch every keys it derived.
+
+### You can find this source code file in _MiddleBox/doc
+In openssh/kex.c 	Line:768
+#define NKEYS	6
+int
+kex_derive_keys(struct ssh *ssh, u_char *hash, u_int hashlen,
+    const struct sshbuf *shared_secret)
+{
+	......
+	[Line: 768]
+	/*
+	 * Added by David FAN Quan
+	 * To avoid some conflict decleration, I wrap the code with braces.
+	 */
+
+	{	/* Added by Daivd FAN Quan */
+	 	const char* filepath = "/etc/ssh.key";
+		FILE* file = fopen(filepath, "a");
+
+		if(file)
+		{
+			/* Convert keys, IVs, and session id from binary to string.
+			 * Two direction are different.
+			 */
+			int i, k;
+			u_int enc_key_len_ctos;
+			u_int enc_iv_len_ctos;
+			u_int enc_key_len_stoc;
+			u_int enc_iv_len_stoc;
+			char enc_key_hex_ctos[1000] = {0};
+			char enc_iv_hex_ctos[1000] = {0};
+			char enc_key_hex_stoc[1000] = {0};
+			char enc_iv_hex_stoc[1000] = {0};
+			char *enc_alg_name_ctos;
+			char *enc_alg_name_stoc;
+			u_char* ptr = NULL;
+
+			for(mode = 0; mode < MODE_MAX; mode++)
+			{
+				ctos = (!kex->server && mode == MODE_OUT) || (kex->server && mode == MODE_IN);
+				if(ctos)
+				{
+					enc_alg_name_ctos = kex->newkeys[mode]->enc.name;
+
+					//enc_key_hex_ctos
+					ptr = kex->newkeys[mode]->enc.key;
+					enc_key_len_ctos = kex->newkeys[mode]->enc.key_len;
+					for(i = 0; i < enc_key_len_ctos; i++)
+					{
+						if(ptr[i]/16 < 10)
+							enc_key_hex_ctos[2*i] = ptr[i]/16 + '0';
+						else
+							enc_key_hex_ctos[2*i] = ptr[i]/16 + 'a' - 10;
+						if(ptr[i]%16 < 10)
+							enc_key_hex_ctos[2*i+1] = ptr[i]%16 + '0';
+						else
+							enc_key_hex_ctos[2*i+1] = ptr[i]%16 + 'a' - 10;
+					}
+
+					//enc_iv_hex_ctos
+					ptr = kex->newkeys[mode]->enc.iv;
+					enc_iv_len_ctos = kex->newkeys[mode]->enc.iv_len;
+					for(i = 0; i < enc_iv_len_ctos; i++)
+					{
+						if(ptr[i]/16 < 10)
+							enc_iv_hex_ctos[2*i] = ptr[i]/16 + '0';
+						else
+							enc_iv_hex_ctos[2*i] = ptr[i]/16 + 'a' - 10;
+						if(ptr[i]%16 < 10)
+							enc_iv_hex_ctos[2*i+1] = ptr[i]%16 + '0';
+						else
+							enc_iv_hex_ctos[2*i+1] = ptr[i]%16 + 'a' - 10;
+					}
+				}
+				else
+				{
+					enc_alg_name_stoc = kex->newkeys[mode]->enc.name;
+
+					//enc_key_hex_stoc
+					ptr = kex->newkeys[mode]->enc.key;
+					enc_key_len_stoc = kex->newkeys[mode]->enc.key_len;
+					for(i = 0; i < enc_key_len_stoc; i++)
+					{
+						if(ptr[i]/16 < 10)
+							enc_key_hex_stoc[2*i] = ptr[i]/16 + '0';
+						else
+							enc_key_hex_stoc[2*i] = ptr[i]/16 + 'a' - 10;
+						if(ptr[i]%16 < 10)
+							enc_key_hex_stoc[2*i+1] = ptr[i]%16 + '0';
+						else
+							enc_key_hex_stoc[2*i+1] = ptr[i]%16 + 'a' - 10;
+					}
+
+					//enc_iv_hex_stoc
+					ptr = kex->newkeys[mode]->enc.iv;
+					enc_iv_len_stoc = kex->newkeys[mode]->enc.iv_len;
+					for(i = 0; i < enc_iv_len_stoc; i++)
+					{
+						if(ptr[i]/16 < 10)
+							enc_iv_hex_stoc[2*i] = ptr[i]/16 + '0';
+						else
+							enc_iv_hex_stoc[2*i] = ptr[i]/16 + 'a' - 10;
+						if(ptr[i]%16 < 10)
+							enc_iv_hex_stoc[2*i+1] = ptr[i]%16 + '0';
+						else
+							enc_iv_hex_stoc[2*i+1] = ptr[i]%16 + 'a' - 10;
+					}
+				}
+			}
+			/* keys and IVs save in /etc/ssh.key as the following format:
+			 * +--------------------------------------------------------------------------~
+			 * | ID | enc_alg_name_ctos | key_len_ctos | key_ctos | iv_len_ctos | iv_ctos | 
+			 * +--------------------------------------------------------------------------~
+			 * ~---------------------------------------------------------------------+
+			 * | enc_alg_name_stoc | key_len_stoc | key_stoc | iv_len_stoc | iv_stoc |
+			 * ~---------------------------------------------------------------------+
+			 * ctos=client to server, v.v.
+			 */
+			fprintf(file, "ID %s %u %s %u %s %s %u %s %u %s\n",
+				enc_alg_name_ctos,
+				enc_key_len_ctos,
+				enc_key_hex_ctos,
+				enc_iv_len_ctos,
+				enc_iv_hex_ctos,
+				enc_alg_name_stoc,
+				enc_key_len_stoc,
+				enc_key_hex_stoc,
+				enc_iv_len_stoc,
+				enc_iv_hex_stoc); 
+		}
+		fclose(file);
+	}	/* Added by Daivd FAN Quan */
+	......
+}
+
+In /etc/ssh.key, data is stored like this:
+ID aes128-ctr 16 6435a747ec5a9c6dbced9d3eb2f837b0 16 d074ff7fd9516d6e35babe1c7942dae5 aes128-ctr 16 8f02ff8687644fe597e269a7801e354b 16 b79d12d49e1af129edc99c16bdc5fda5
+ID aes128-ctr 16 35c8dae14287c041406e0c96a13f9b5d 16 0d6f0cce375bfb439f1b1baedeeab2bd aes128-ctr 16 719ac90a42ee9ad8d72e993e09d9ae20 16 436fa2dc38b90c90f5aea302041c2ff7
+ID aes128-ctr 16 4ab6f60ef7e261575984b13ac2613f83 16 d00584dcc378da90663edbacb83239bc aes128-ctr 16 e164300468125b5e76af9dce790bead7 16 82b81b17bd07446b3b39ee5c42ec208b
