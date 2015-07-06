@@ -15,6 +15,9 @@ kex_derive_keys(), so when it compute new keys, I will
 catch these keys and put it into the file above. In theory,
 this way can catch every keys it derived.
 
+Furthermore, I use ssh->remote_ipaddr instead of session_id to identify
+each session. On middlebox, I will take the final match.
+
 ### You can find this source code file in _MiddleBox/doc
 In openssh/kex.c 	Line:768
 #define NKEYS	6
@@ -124,15 +127,16 @@ kex_derive_keys(struct ssh *ssh, u_char *hash, u_int hashlen,
 				}
 			}
 			/* keys and IVs save in /etc/ssh.key as the following format:
-			 * +--------------------------------------------------------------------------~
-			 * | ID | enc_alg_name_ctos | key_len_ctos | key_ctos | iv_len_ctos | iv_ctos | 
-			 * +--------------------------------------------------------------------------~
-			 * ~---------------------------------------------------------------------+
-			 * | enc_alg_name_stoc | key_len_stoc | key_stoc | iv_len_stoc | iv_stoc |
-			 * ~---------------------------------------------------------------------+
+			 * +---------------------------------------------------------------------------~
+			 * | remote_ipaddr | enc_alg_name_ctos | key_len_ctos | key_ctos | iv_len_ctos |
+			 * +---------------------------------------------------------------------------~
+			 * ~-------------------------------------------------------------------------------+
+			 * | iv_ctos | enc_alg_name_stoc | key_len_stoc | key_stoc | iv_len_stoc | iv_stoc |
+			 * ~-------------------------------------------------------------------------------+
 			 * ctos=client to server, v.v.
 			 */
-			fprintf(file, "ID %s %u %s %u %s %s %u %s %u %s\n",
+			fprintf(file, "%s %s %u %s %u %s %s %u %s %u %s\n",
+				ssh->remote_ipaddr,
 				enc_alg_name_ctos,
 				enc_key_len_ctos,
 				enc_key_hex_ctos,

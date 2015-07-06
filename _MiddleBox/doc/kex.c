@@ -865,14 +865,16 @@ kex_derive_keys(struct ssh *ssh, u_char *hash, u_int hashlen,
 				}
 			}
 			/* keys and IVs save in /etc/ssh.key as the following format:
-			 * +--------------------------------------------------------------------------~
-			 * | ID | enc_alg_name_ctos | key_len_ctos | key_ctos | iv_len_ctos | iv_ctos | 
-			 * +--------------------------------------------------------------------------~
-			 * ~---------------------------------------------------------------------+
-			 * | enc_alg_name_stoc | key_len_stoc | key_stoc | iv_len_stoc | iv_stoc |
-			 * ~---------------------------------------------------------------------+
+			 * +---------------------------------------------------------------------------~
+			 * | remote_ipaddr | enc_alg_name_ctos | key_len_ctos | key_ctos | iv_len_ctos |
+			 * +---------------------------------------------------------------------------~
+			 * ~-------------------------------------------------------------------------------+
+			 * | iv_ctos | enc_alg_name_stoc | key_len_stoc | key_stoc | iv_len_stoc | iv_stoc |
+			 * ~-------------------------------------------------------------------------------+
+			 * ctos=client to server, v.v.
 			 */
-			fprintf(file, "ID %s %u %s %u %s %s %u %s %u %s\n",
+			fprintf(file, "%s %s %u %s %u %s %s %u %s %u %s\n",
+				ssh->remote_ipaddr,
 				enc_alg_name_ctos,
 				enc_key_len_ctos,
 				enc_key_hex_ctos,
