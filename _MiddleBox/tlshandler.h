@@ -29,8 +29,8 @@ class TLSHandler: public AppLayerHandler
         TLSHandler();
         virtual void* parse(TCPDataNode* head, TCPDataDirection direction, FlowKey* flowkey);
         virtual void process(void *record, TCPDataDirection direction, FlowKey* flowkey);
-        void changeStatus(TLSStatus newStatus);
-        TLSStatus getStatus();
+        void changeStatus(TLSStatus newStatus){status = newStatus;};
+        TLSStatus getStatus(){return status;};
 
         void setClientRandom(uint8_t* cr){client_random = new uint8_t[32]; memcpy(client_random, cr, 32);};
         void setServerRandom(uint8_t* sr){server_random = new uint8_t[32]; memcpy(server_random, sr, 32);};

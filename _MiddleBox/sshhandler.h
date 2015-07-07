@@ -20,6 +20,21 @@ enum SSHStatus
     SSH_CONNECTED
 };
 
+struct KeyMaterial_SSH
+{
+    char enc_alg_ctos[50];
+    unsigned int enc_key_len_ctos;
+    uint8_t enc_key_ctos[100];
+    unsigned int enc_iv_len_ctos;
+    uint8_t enc_iv_ctos[100];
+
+    char enc_alg_stoc[50];
+    unsigned int enc_key_len_stoc;
+    uint8_t enc_key_stoc[100];
+    unsigned int enc_iv_len_stoc;
+    uint8_t enc_iv_stoc[100];
+};
+
 class SSHHandler: public AppLayerHandler
 {
     public:
@@ -27,8 +42,12 @@ class SSHHandler: public AppLayerHandler
 
         virtual void* parse(TCPDataNode *head, TCPDataDirection direction, FlowKey* flowkey);
         virtual void process(void *record, TCPDataDirection direction, FlowKey* flowkey);
-        void changeStatus(SSHStatus newStatus);
-        SSHStatus getStatus();
+        void changeStatus(SSHStatus newStatus){status = newStatus;};
+        SSHStatus getStatus(){return status;};
+
+        //Get keys from file /etc/ssh.key and save them to km
+        void getKeys(FlowKey *flowkey);
+        void decrypt(unsigned int length, const uint8_t *payload, KeyMaterial_SSH *km, AppLayerDataDirection direction, uint32_t *packet_length, uint8_t *padding_length,uint8_t *dest);
 
         ~SSHHandler();
     protected:
@@ -43,7 +62,7 @@ class SSHHandler: public AppLayerHandler
         int clientIs;   //These should be put into AppLayerHandler
         AppLayerDataDirection getAppLayerDataDirection(TCPDataDirection tcpdirection);
 
-        //TODO: key material or sth.
+        KeyMaterial_SSH *km;
 };
 
 #endif // SSHHANDLER_H
