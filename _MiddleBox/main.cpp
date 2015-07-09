@@ -158,6 +158,81 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             for(int i = 0; i < plaintlen; i++)
                 printf("%02x", plaint[i]);
             cout<<endl;
+            for(int i = 0; i < plaintlen; i++)
+                printf("%c", plaint[i]);
+            cout<<endl;
+
+            //If something over IPsec(ESP)
+            uint8_t nextHeader = plaint[plaintlen-1];
+            uint8_t padding_len = plaint[plaintlen - 2];
+            if(nextHeader == 58)
+                cout<<"ESP is protecting ICMPv6.\n";
+            else if(nextHeader == 6)
+            {
+                cout<<"ESP is protecting TCP\n";
+                TCPHdr tcphdr = TCPHdr(plaint);
+
+                uint16_t port1 = tcphdr.getSrcPort();
+                uint16_t port2 = tcphdr.getDestPort();
+
+                //cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
+                /* This is a new flow, do not re-use the flow that ISAKMP have used. */
+                FlowKey key = FlowKey(ip1, port1, ip2, port2);
+                FlowInfoPtr value = flowMgr.findFlow(key);
+
+                if(value)
+                    cout<<"ptr is not empty\n";
+                else
+                    cout<<"ptr is empty\n";
+
+                //manage flow
+                if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
+                {
+                    value = flowMgr.addNewFlow(key);
+                    cout<<"new flow added  "<<endl;
+                }
+                else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
+                {
+                    value->statusChange(TCP_WORKING);
+                    cout<<"flow changed to tcp_working\n";
+                }
+                else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
+                {
+                    value->statusChange(TCP_TERMINATING);
+                    cout<<"flow changed to tcp_terminating\n";
+                }
+                else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
+                {
+                    flowMgr.deleteFlow(key);
+                    cout<<"flow deleted normally\n";
+                    return;
+                }
+                else if(value && tcphdr.isRST())
+                {
+                    flowMgr.deleteFlow(key);
+                    cout<<"flow deleted c'z reseted\n";
+                }
+                else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
+                {
+                    //handle tcp payload
+                    const uint8_t* tcp_payload = plaint + tcphdr.getHL();
+                    unsigned int tcp_payload_len = plaintlen - padding_len - 2 - tcphdr.getHL();
+                    cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+                    cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+                    if(tcp_payload_len != 0)
+                    {
+                        cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                        cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                        value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                    }
+
+                }
+                else
+                {
+                    cout<<"this pkt is skiped\n";
+                    return;     //skip this packet
+                }
+            }
         }
         else if(ip6hdr.getNextHeader() == 6)    //If it's TCP
         {
@@ -235,28 +310,35 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 void* sslfile(void* arg)//Temp by Cong Liu
 {
     char *filepath = NULL;
-	filepath = getenv("SSLKEYLOGFILE");  //for windows_nt
-	printf("file: %s \n", filepath);
-	if (strlen(filepath) <= 0) {
-	    puts("Error reading SSLKEYLOGFILE, quit thread...");
-	    return NULL;
-	}
+    filepath = getenv("SSLKEYLOGFILE");  //for windows_nt
+    printf("file: %s \n", filepath);
+    if (strlen(filepath) <= 0)
+    {
+        puts("Error reading SSLKEYLOGFILE, quit thread...");
+        return NULL;
+    }
 
     FILE *fin = fopen(filepath, "r");
-    if (fin) {
+    if (fin)
+    {
         char buf[1000];
-        while (true) {
-            if (fgets(buf, 999, fin)) {
+        while (true)
+        {
+            if (fgets(buf, 999, fin))
+            {
                 //printf("SSLKEYLOG: ");
                 //puts(buf);
-                if (memcmp(buf, "CLIENT", 6) == 0) {
+                if (memcmp(buf, "CLIENT", 6) == 0)
+                {
                     char buf2[100];
                     char cr[200] = {0};
                     char ms[200] = {0};
                     sscanf(buf, "%s %s %s", buf2, cr, ms);
                     addMasterSecret(cr, ms);
                 }
-            } else {
+            }
+            else
+            {
                 //printf("NO OUTPUT...\n");
                 //sleep(5);
             }
@@ -276,7 +358,7 @@ int main(int argc, char *argv[])
     pcap_pkthdr pkthdr;
     const u_char *packet;
     bpf_program fp;
-    char filter_exp[] = "port 22";  //SSH only
+    char filter_exp[] = "";  //SSH only
     bpf_u_int32 mask;
     bpf_u_int32 net;
 
