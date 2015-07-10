@@ -349,8 +349,8 @@ void* sslfile(void* arg)//Temp by Cong Liu
 
 int main(int argc, char *argv[])
 {
-    //pthread_t tid;
-    //pthread_create(&tid, NULL, sslfile, NULL);
+    pthread_t tid;
+    pthread_create(&tid, NULL, sslfile, NULL);
     //some var that pcap will use
     pcap_t *handle;
     char *device;
@@ -371,7 +371,7 @@ int main(int argc, char *argv[])
         cout<<"Couldn't find default device: "<<errbuf<<endl;
         return 2;
     }
-    device = "eth1";    //NOTICE: I assign the device directely!
+    device = "eth0";    //NOTICE: I assign the device directely!
     //open a pcap transaction
     handle = pcap_open_live(device, BUFSIZ, 0, 1000, errbuf);
     if(handle == NULL)

@@ -8,7 +8,7 @@ struct TLSRec
 {
     uint8_t content_type;
     uint16_t version;   //byte order problem
-    unsigned int length;
+    uint16_t length;
     uint8_t tls_payload[70000];
 };
 
