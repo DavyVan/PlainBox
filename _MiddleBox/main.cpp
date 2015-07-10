@@ -1,6 +1,7 @@
 #include<pcap.h>
 #include<iostream>
 #include<cstdio>
+#include <errno.h>
 #include<memory.h>
 #include"ip4hdr.h"
 #include"ip6hdr.h"
@@ -12,6 +13,8 @@
 #include"ipaddr.h"
 #include "tls.h"
 #include"esphandler.h"
+#include "nfqueue.h"
+#include <signal.h>
 using namespace std;
 
 FlowMgr flowMgr = FlowMgr();
@@ -21,7 +24,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
     //get IP and TCP headers, but above all we must look which IP protocol version will use.
     uint8_t ip_version;
-    memcpy(&ip_version, packet+14, 8);
+    memcpy(&ip_version, packet+14, 1);
     ip_version>>=4;
     if(ip_version == 4)
     {
@@ -119,7 +122,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
             if(port1 == 500 || port2 == 500)    //If it's ISAKMP in port 500
             {
-                cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                //cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
 
                 FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
@@ -347,10 +350,35 @@ void* sslfile(void* arg)//Temp by Cong Liu
 
 }
 
+void my_function(int sig){ // can be called asynchronously
+    nfqueue_close();
+    exit(0);
+}
+
 int main(int argc, char *argv[])
 {
+    signal(SIGINT, my_function); 
     pthread_t tid;
-    pthread_create(&tid, NULL, sslfile, NULL);
+    //pthread_create(&tid, NULL, sslfile, NULL);
+    if (argc > 1) {//RUN libnetfilter mode
+        int fd = nfqueue_init();
+    	int rv;
+    	char buf[4096] __attribute__ ((aligned));
+	    for (;;) {
+		    if ((rv = recv(fd, buf, sizeof(buf), 0)) >= 0) {
+		        //printf("recv rv=%d\n", rv);
+			    nfqueue_handle(buf, rv);
+			    continue;
+		    }
+		    if (rv < 0 && errno == ENOBUFS) {
+			    printf("losing packets!\n");
+			    continue;
+		    }
+		    perror("recv failed");
+		    break;
+	    }
+        
+    }
     //some var that pcap will use
     pcap_t *handle;
     char *device;

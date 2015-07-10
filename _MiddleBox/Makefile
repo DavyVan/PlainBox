@@ -1,7 +1,7 @@
 CC     = g++
-CFLAGS = -lpcap -I /home/fanquan/Desktop/boost_1_58_0 -lpthread -lssl -lcrypto
+CFLAGS = -lpcap -I /home/fanquan/Desktop/boost_1_58_0 -lpthread -lssl -lcrypto -lnetfilter_queue
 Target = _Middlebox
-Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o applayerhandler.o tcphandler.o tlshandler.o tls.o ip6hdr.o udphdr.o esphandler.o sshhandler.o
+Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o applayerhandler.o tcphandler.o tlshandler.o tls.o ip6hdr.o udphdr.o esphandler.o sshhandler.o nfqueue.o
 
 $(Target): $(Obj)
 	$(CC) -o $(Target) $(Obj) $(CFLAGS)

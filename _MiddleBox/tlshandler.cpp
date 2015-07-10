@@ -293,6 +293,13 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else if(rec->content_type == 23)
     {
+        if (!key_ready) {
+            if(client_random && server_random && cipher_suite != 0)
+            {
+                getTLSKey(client_random, server_random, cipher_suite, flowkey, direction);
+            }
+        }
+    
         //cout<<"APPLICATION_DATA "<<rec->length<<" bytes"<<endl;
         if(/*TODO: if key exists*/1)
         {
