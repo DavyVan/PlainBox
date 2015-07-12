@@ -31,7 +31,7 @@ void FlowInfo::statusChange(FlowStatus newStatus)
     status = newStatus;
 }
 
-void FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq)
+int FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq)
 {
     //decide direction
     TCPDataDirection direction;
@@ -55,7 +55,17 @@ void FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, 
             direction = _2to1;
     }
 
-    tcphandler.reAssemblePacket(srcPort, destPort, payload, length, direction, seq, &key);
+    int ret = tcphandler.reAssemblePacket(srcPort, destPort, payload, length, direction, seq, &key);
+    if (tcphandler.abe.len > 0) {
+        abe = tcphandler.abe;
+        tcphandler.abe.len = 0;
+    }
+    return ret;
+}
+
+int FlowInfo::handleKeys(const uint8_t *payload, unsigned int length)
+{
+    tcphandler.handleKeys(payload, length);
 }
 
 void FlowInfo::print(TCPDataDirection direction)

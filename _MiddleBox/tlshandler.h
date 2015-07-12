@@ -51,6 +51,8 @@ class TLSHandler: public AppLayerHandler
 
         /// @brief get plaintext of a record with Application Data
         void decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerDataDirection direction);
+        
+        virtual int handleKeys(const uint8_t *payload, unsigned int length);
 
         ~TLSHandler();
     private:
@@ -64,8 +66,14 @@ class TLSHandler: public AppLayerHandler
         int clientIs;   //which side is client, 1 for IP1, 2 for IP2. Another idea is store this in FlowKey.
         AppLayerDataDirection getAppLayerDataDirection(TCPDataDirection tcpdirection);
 
-        bool key_ready;
+        bool key_ready;//for client side
+        bool key_ready_mbox;//for mbox side
         KeyMaterial km;
+
+        int target_mac_len;        
+        int target_key_len;
+        int target_iv_len;
+
 };
 
 #endif // TLSHANDLER_H

@@ -23,7 +23,7 @@ class TCPHdr
         bool isFIN();
 
         ~TCPHdr();
-    private:
+    //private:
         tcphdr header;
 };
 

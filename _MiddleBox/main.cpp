@@ -20,9 +20,17 @@ using namespace std;
 
 FlowMgr flowMgr = FlowMgr();
 
+int drop;
+int doexit = 0;
+
 //Do something when we get a new packet
 void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
+    if (doexit) {
+                    nfqueue_close();
+                    exit(0);
+    }
+    drop = 0;
     //get IP and TCP headers, but above all we must look which IP protocol version will use.
     uint8_t ip_version;
     memcpy(&ip_version, packet+14, 1);
@@ -91,16 +99,35 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             //cout<<"tcp_payload_len1="<<tcp_payload_len<<endl;
             if(tcp_payload_len != 0)
             {
-                cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
-                cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
-                value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                if (tcphdr.header.seq == 0 && tcphdr.header.check == 0) {//extra packet sent by us
+                    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                    value->handleKeys(tcp_payload, tcp_payload_len);
+                    return;
+                }
+                
+                
+                int ret = value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                if (value->abe.len > 0) {
+                    int c2s = 0;
+                    if (equalto(ip1->getAddr_raw(), value->key.getIP1()->getAddr_raw(), 4)) c2s = 1;
+                    printf("\nTCP: ret=%d  tcp_payload_len=%d pabe_l=%d\n", ret, tcp_payload_len, value->abe.len);
+                    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                    if (sendTCPWithOption((packet + 14), value->abe, c2s)) {
+                        drop = 1;
+                    }
+                    //doexit = 1;
+                    value->abe.len = 0;
+                    delete []value->abe.f;
+                }
             }
 
         }
         else
         {
             //cout<<"this pkt is skiped\n";
-            return;     //skip this packet
+            return;//skip this packet
         }
 
 
@@ -128,11 +155,11 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
                 FlowInfoPtr value = flowMgr.findFlow(key);
-                if(value)
+/*                if(value)
                     cout<<"ptr is not empty\n";
                 else
                     cout<<"ptr is empty\n";
-
+*/
                 //manage flow, because it's UDP so nothing to do except adding this flow
                 if(!value)
                 {
@@ -225,15 +252,15 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                     cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
                     if(tcp_payload_len != 0)
                     {
-                        cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
-                        cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                        //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                        //cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
                         value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
                     }
 
                 }
                 else
                 {
-                    cout<<"this pkt is skiped\n";
+                    //cout<<"this pkt is skiped\n";
                     return;     //skip this packet
                 }
             }
@@ -252,12 +279,12 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
             FlowKey key = FlowKey(ip1, port1, ip2, port2);
             FlowInfoPtr value = flowMgr.findFlow(key);
-
+/*
             if(value)
                 cout<<"ptr is not empty\n";
             else
                 cout<<"ptr is empty\n";
-
+*/
             //manage flow
             //copy from corresponding part of ipv4
             if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
@@ -295,20 +322,19 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
                 if(tcp_payload_len != 0)
                 {
-                    cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
-                    cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                   // cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                   // cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
                     value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
                 }
 
             }
             else
             {
-                cout<<"this pkt is skiped\n";
+                //cout<<"this pkt is skiped\n";
                 return;     //skip this packet
             }
         }
     }
-
 }
 
 void* sslfile(void* arg)//Temp by Cong Liu
@@ -369,10 +395,6 @@ void usage() {
 
 int main(int argc, char *argv[])
 {
-    signal(SIGINT, my_function); 
-    pthread_t tid;
-    //pthread_create(&tid, NULL, sslfile, NULL);
-    
     char *pub_key = NULL;
     char *prv_key = NULL;
     
@@ -394,6 +416,10 @@ int main(int argc, char *argv[])
         }
     }
     
+    signal(SIGINT, my_function); 
+    pthread_t tid;
+    pthread_create(&tid, NULL, sslfile, NULL);
+    
     abe_init(pub_key, prv_key);
     /*
     //test abe
@@ -401,13 +427,12 @@ int main(int argc, char *argv[])
     char policy[] = "CN and TLS";
     ABEFile r = abe_encrypt((unsigned char*)text, strlen(text), policy);
     printf("abefile.len=%d\n", r.len);
-    char* res = abe_decrypt(r.f);
-    if (res) printf("cpabe decrypt: res=%s\n", res);
+    ABEFile res = abe_decrypt(r.f);
+    if (res.f) printf("cpabe decrypt: res=%s\n", res.f);
     else puts("Failed to decrypt!");
     
     exit(0);
     */
-    
     
     if (rewrite) {//RUN libnetfilter mode
         int fd = nfqueue_init();

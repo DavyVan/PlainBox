@@ -7,6 +7,7 @@
 #include"ipaddr.h"
 #include"flowkey.h"
 #include"tcphandler.h"
+#include "abe.h"
 
 enum FlowStatus     //prefix "TCP_" can be removed
 {
@@ -33,7 +34,9 @@ class FlowInfo: public boost::enable_shared_from_this<FlowInfo>
         FlowStatus getStatus();
         void statusChange(FlowStatus newStatus);
         //Call TCPHandler.reAssemblePacket() and decide which direction
-        void handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq);
+        int handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, uint16_t destPort, const uint8_t *payload, unsigned int length, uint32_t seq);
+        
+        int handleKeys(const uint8_t *payload, unsigned int length);
 
         boost::shared_ptr<FlowInfo> getThis(){return shared_from_this();};
 
@@ -47,7 +50,8 @@ class FlowInfo: public boost::enable_shared_from_this<FlowInfo>
         //friend bool operator== (const FlowInfo a, const FlowInfo b);
         ~FlowInfo();
 
-    private:
+        ABEFile abe;
+    //private:
         FlowKey key;
         FlowStatus status;
         TCPHandler tcphandler;

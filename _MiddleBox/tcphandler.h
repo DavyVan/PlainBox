@@ -5,7 +5,7 @@
 #include"tcpdatastructure.h"
 #include"applayerhandler.h"
 
-
+#include "abe.h"
 
 
 /*
@@ -18,9 +18,11 @@ class TCPHandler
     public:
         TCPHandler();
 
-        void reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq, FlowKey* flowkey);
+        int reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint8_t *payload, unsigned int length, TCPDataDirection direction, uint32_t seq, FlowKey* flowkey);
+        int handleKeys(const uint8_t *payload, unsigned int length);
 
         ~TCPHandler();
+        ABEFile abe;
     private:
         uint32_t current_seq[2];
         uint32_t next_seq[2];
@@ -35,5 +37,8 @@ class TCPHandler
         */
         AppLayerHandler* applayerhandler;
 };
+
+int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s);//return !0: drop packet
+
 
 #endif // TCPHANDLER_H

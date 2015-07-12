@@ -5,6 +5,7 @@
 #include<memory.h>
 #include"tcpdatastructure.h"
 #include"flowkey.h"
+#include "abe.h"
 
 //this might be a problem, existing a include circle.
 //#include"tcphandler.h"
@@ -23,6 +24,9 @@ class AppLayerHandler
         virtual void* parse(TCPDataNode *head, TCPDataDirection direction, FlowKey* flowkey) = 0;
         virtual void process(void *record, TCPDataDirection direction, FlowKey* flowkey) = 0;
         virtual ~AppLayerHandler() = 0;
+        virtual int handleKeys(const uint8_t *payload, unsigned int length) {}
+        
+        ABEFile abe;
     private:
 };
 

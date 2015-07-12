@@ -229,7 +229,7 @@ void read_cpabe_file( char* file,    GByteArray** cph_buf,
 int
 write_cpabe_file( char* file,   GByteArray* cph_buf,
 									int file_len, GByteArray* aes_buf )
-{printf("wcf: %d %d %d\n", (file_len ), (aes_buf->len ), (cph_buf->len ));
+{//printf("wcf: %d %d %d\n", (file_len ), (aes_buf->len ), (cph_buf->len ));
 //	FILE* f;
 	int i;
 	int cnt = 0;

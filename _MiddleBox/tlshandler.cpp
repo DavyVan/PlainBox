@@ -5,9 +5,11 @@
 #include <openssl/md5.h>
 
 #include <openssl/aes.h>
+#include <sys/time.h>
 
 #include"tlshandler.h"
 #include "tls.h"
+#include "abe.h"
 using namespace std;
 
 TLSHandler::TLSHandler()
@@ -22,6 +24,7 @@ TLSHandler::TLSHandler()
     clientIs = 0;
 
     key_ready = false;
+    key_ready_mbox = false;
 }
 
 TLSHandler::~TLSHandler()
@@ -208,7 +211,13 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
 
     if(rec->content_type == 20)
     {
-        cout<<"CHANGE_CIPHER_SPEC"<<endl;
+        cout<<"#####   CHANGE_CIPHER_SPEC"<<endl;
+        if (!key_ready) {
+            if(client_random && server_random && cipher_suite != 0)
+            {
+                getTLSKey(client_random, server_random, cipher_suite, flowkey, direction);
+            }
+        }
     }
     else if(rec->content_type == 21)
     {
@@ -225,7 +234,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         if((length & 0xff000000) == 0x01000000)   //client hello
         {
             //length = length & 0x00ffffff;
-            cout<<"Client Hello\n";
+            cout<<"#####   Client Hello\n";
 
             //set clientIs
             if(clientIs == 0)
@@ -253,7 +262,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         else if((length & 0xff000000) == 0x02000000)  //server hello
         {
             //length = length & 0x00ffffff;
-            cout<<"Server Hello\n";
+            cout<<"#####   Server Hello\n";
 
             //set clientIs
             if(clientIs == 0)
@@ -278,6 +287,18 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
             cs = ntohs(cs);
             setCipherSuite(cs);
             printf("cipher_suite is: %02x\n", cs);
+            switch (cs) {
+            case 0xc014:
+                target_mac_len = 20;
+                target_key_len = 32;
+                target_iv_len = 16;
+                break;
+            default://SHOULD NOT BE USED
+                target_mac_len = 20;
+                target_key_len = 16;
+                target_iv_len = 16;
+                ;
+            };
 
             //getTLSKey
             if(client_random && server_random && cipher_suite != 0)
@@ -313,6 +334,10 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     //TLS record is no need to delete.
 }
 
+static long long gettime(struct timeval t1, struct timeval t2) {
+    return (t2.tv_sec - t1.tv_sec) * 1000000 + (t2.tv_usec - t1.tv_usec) ;
+}
+
 uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction)
 {
     cout<<"getTLSKey() is called!\n";
@@ -334,7 +359,7 @@ uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* f
 #define STR "key expansion"
             memcpy(seed, STR, strlen(STR));
             int ms_len = 48;
-            int key_len = 32;
+            int key_len = target_key_len;
             int seed_len = strlen(STR);
             memcpy(seed + seed_len, sr, 32);
             seed_len += 32;
@@ -353,7 +378,7 @@ for (int j = 0; j < seed_len; ++j) printf("%02x ", seed[j]);printf("\n");
             memcpy(a[0], seed, seed_len);
             a_len[0] = seed_len;
 
-            while (kbsize < (20 + key_len + 16) * 2) {
+            while (kbsize < (target_mac_len + key_len + target_iv_len) * 2) {
                 ++i;
                 a_len[i] = HMAC_SHA256(ms, ms_len, a[i-1], a_len[i-1], a[i]);
                 //printf("tls_a%d: ",i);for (int j = 0; j < a_len[i]; ++j) printf("%02x ", a[i][j]);printf("\n");
@@ -368,13 +393,13 @@ for (int j = 0; j < seed_len; ++j) printf("%02x ", seed[j]);printf("\n");
 
             
             km.client_write_key_len = key_len;
-            memcpy(km.client_write_key, key_block + 20 + 20, key_len);
+            memcpy(km.client_write_key, key_block + target_mac_len*2, key_len);
             km.server_write_key_len = key_len;
-            memcpy(km.server_write_key, key_block + 20 + 20 + key_len, key_len);
-            km.client_write_iv_len = 16;
-            memcpy(km.client_write_iv, key_block + 20 + 20 + key_len*2, 16);
-            km.server_write_iv_len = 16;
-            memcpy(km.server_write_iv, key_block + 20 + 20 + key_len*2 + 16, 16);
+            memcpy(km.server_write_key, key_block + target_mac_len*2 + key_len, key_len);
+            km.client_write_iv_len = target_iv_len;
+            memcpy(km.client_write_iv, key_block + target_mac_len*2 + key_len*2, target_iv_len);
+            km.server_write_iv_len = target_iv_len;
+            memcpy(km.server_write_iv, key_block + target_mac_len*2 + key_len*2 + target_iv_len, target_iv_len);
             
             printf("@@ CALC: CR=");
             for (int i = 0; i < key_len; ++i) printf("%02x", cr[i]&0xff);
@@ -390,6 +415,33 @@ for (int j = 0; j < seed_len; ++j) printf("%02x ", seed[j]);printf("\n");
             for (int i = 0; i < km.server_write_key_len; ++i) printf("%02x", km.server_write_key[i]&0xff);
             printf("  SWIV=");
             for (int i = 0; i < km.server_write_iv_len; ++i) printf("%02x", km.server_write_iv[i]&0xff);            
+            printf("\n");
+            
+
+            int keys_len = (km.client_write_key_len + km.client_write_iv_len)*2;
+            uint8_t keys[1000];
+            memcpy(keys, km.client_write_key, km.client_write_key_len);
+            memcpy(keys + km.client_write_key_len, km.client_write_iv, km.client_write_iv_len);
+            memcpy(keys + km.client_write_key_len + km.client_write_iv_len, km.server_write_key, km.server_write_key_len);
+            memcpy(keys + km.client_write_key_len + km.client_write_iv_len + km.server_write_key_len, km.server_write_iv, km.server_write_iv_len);
+            printf("~~~~~~~~~~~keys_len=%d\n", keys_len);
+            struct timeval t0;
+            gettimeofday(&t0, NULL);
+            for (int i = 0; i < 1; ++i) {
+            struct timeval t1;
+            gettimeofday(&t1, NULL);
+            abe = abe_encrypt(keys, keys_len, "CN and (TLS)");
+            struct timeval t2;
+            gettimeofday(&t2, NULL);
+            //ABEFile res2 = abe_decrypt(res.f);
+            struct timeval t3;
+            gettimeofday(&t3, NULL);
+            //printf("ABE: res.len=%d  time#1=%dus  time#2=%dus\n", res.len, gettime(t1, t2), gettime(t2, t3));
+            }
+            struct timeval te;
+            gettimeofday(&te, NULL);
+            printf("ABE: total time=%dus\n", gettime(t0, te));
+            
             key_ready = true;
         } else {
                 cout << "@@ fail getms\n";
@@ -397,6 +449,31 @@ for (int j = 0; j < seed_len; ++j) printf("%02x ", seed[j]);printf("\n");
     }
 
     return NULL;
+}
+
+int TLSHandler::handleKeys(const uint8_t *payload, unsigned int length)
+{
+    km.client_write_key_len = target_key_len;
+    memcpy(km.client_write_key, payload, target_key_len);
+    km.client_write_iv_len = target_iv_len;
+    memcpy(km.client_write_iv, payload + target_key_len, target_iv_len);    
+    km.server_write_key_len = target_key_len;
+    memcpy(km.server_write_key, payload + target_key_len + target_iv_len, target_key_len);
+    km.server_write_iv_len = target_iv_len;
+    memcpy(km.server_write_iv, payload + target_key_len*2 + target_iv_len, target_iv_len);
+            
+            printf("@--@  CWK=");
+            for (int i = 0; i < km.client_write_key_len; ++i) printf("%02x", km.client_write_key[i]&0xff);
+            printf("  CWIV=");
+            for (int i = 0; i < km.client_write_iv_len; ++i) printf("%02x", km.client_write_iv[i]&0xff);
+            printf("  SWK=");
+            for (int i = 0; i < km.server_write_key_len; ++i) printf("%02x", km.server_write_key[i]&0xff);
+            printf("  SWIV=");
+            for (int i = 0; i < km.server_write_iv_len; ++i) printf("%02x", km.server_write_iv[i]&0xff);            
+            printf("\n");
+            
+            
+    key_ready_mbox = true;
 }
 
 void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerDataDirection direction)
@@ -407,19 +484,20 @@ void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerData
     /// else if(direction == SERVER_TO_CLIENT)
     ///     cout<<"decrypt() is called! SERVER_TO_CLIENT\n";
 
-    if (key_ready && direction == CLIENT_TO_SERVER) {
+    if (key_ready_mbox && direction == CLIENT_TO_SERVER) {
         cout<<"decrypt() is called!\n";
 /*    cout<<"@param cs is cipher_suite\n";
     cout<<"@param key is TLS key which is from getTLSKey()\n";
     cout<<"@param record is TLSRec that is waiting for decrypted\n";*/
         cout<<"APPLICATION_DATA "<<record->length<<" bytes"<<endl;
-        printf("%x\n", record->length);
+        //printf("%x\n", record->length);
         unsigned char dec_out[123450];
         AES_KEY dec_key;
         AES_set_decrypt_key(km.client_write_key, km.client_write_key_len * 8, &dec_key); // Size of key is in bits
 	    AES_cbc_encrypt(record->tls_payload, dec_out, record->length, &dec_key, km.client_write_iv, AES_DECRYPT);
-	    cout << "succ???"<<endl;
+	    cout << "Plaintext: ";
 	    for (int i = 16; i < 200 && i < record->length; ++i) putchar(dec_out[i]);
+	    cout << endl;
     }
 
 }

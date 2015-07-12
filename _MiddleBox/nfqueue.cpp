@@ -22,7 +22,8 @@
 static struct nfq_handle *h;
 static struct nfq_q_handle *qh;
 
-extern void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet);
+extern int got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet);
+extern int drop;
 
 static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 	      struct nfq_data *nfa, void *data)
@@ -32,6 +33,7 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
 	uint32_t id = 0;
 	if (ph) {
 		id = ntohl(ph->packet_id);
+		//printf("------------------------------------------------id=%d\n", id);
 		//hw_protocol = ntohs(ph->hw_protocol);
 	}
 
@@ -44,19 +46,19 @@ static int cb(struct nfq_q_handle *qh, struct nfgenmsg *nfmsg,
     got_packet(NULL, NULL, ibuf-14);
 
 	
-	if (0) {//DROP packet
+	if (drop) {//DROP packet
+	    printf("#####################nfqueue drop! id=%d\n", id);
 	    return nfq_set_verdict(qh, id, NF_DROP, 0, NULL);
-	}
-	    
-	return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+	} else {
+    	return nfq_set_verdict(qh, id, NF_ACCEPT, 0, NULL);
+    }
 }
 
 static void iptables_start()
 {puts("iptables_start()");
     int ret;
 //    ret = system("ip6tables -t raw -A PREROUTING -j NFQUEUE --queue-num 0");
-//    ret = system("iptables  -A FORWARD -j NFQUEUE --queue-num 0");
-    ret = system("iptables -t raw -A PREROUTING -j NFQUEUE --queue-num 0");
+    ret = system("iptables  -A FORWARD -j NFQUEUE --queue-num 0");
     
     ret = system("iptables -A INPUT -j NFQUEUE --queue-num 0");
     ret = system("iptables -A OUTPUT -j NFQUEUE --queue-num 0");
@@ -68,8 +70,8 @@ static void iptables_stop()
 {puts("iptables_stop()");
     int ret;
 //    ret = system("ip6tables -t raw -D PREROUTING -j NFQUEUE --queue-num 0");
-//    ret = system("iptables  -D FORWARD -j NFQUEUE --queue-num 0");
-    ret = system("iptables -t raw -D PREROUTING -j NFQUEUE --queue-num 0");
+    ret = system("iptables  -D FORWARD -j NFQUEUE --queue-num 0");
+//    ret = system("iptables -t raw -D POSTROUTING -j NFQUEUE --queue-num 0");
 
     ret = system("iptables -D INPUT -j NFQUEUE --queue-num 0");
     ret = system("iptables -D OUTPUT -j NFQUEUE --queue-num 0");
