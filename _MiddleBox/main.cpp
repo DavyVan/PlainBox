@@ -14,6 +14,7 @@
 #include "tls.h"
 #include"esphandler.h"
 #include "nfqueue.h"
+#include "abe.h"
 #include <signal.h>
 using namespace std;
 
@@ -350,8 +351,19 @@ void* sslfile(void* arg)//Temp by Cong Liu
 
 }
 
+int rewrite = 0;
+
 void my_function(int sig){ // can be called asynchronously
-    nfqueue_close();
+    if (rewrite) nfqueue_close();
+    exit(0);
+}
+
+void usage() {
+    puts("Usage: <PROGRAM_NAME> <OPTIONS>");
+    puts("options:  -h    show this message");
+    puts("          -w    run  nfqueue mode");
+    puts("          -pub <PUB_KEY_FILE>    specify public key");
+    puts("          -prv <PRV_KEY_FILE>    specify private key");
     exit(0);
 }
 
@@ -360,7 +372,44 @@ int main(int argc, char *argv[])
     signal(SIGINT, my_function); 
     pthread_t tid;
     //pthread_create(&tid, NULL, sslfile, NULL);
-    if (argc > 1) {//RUN libnetfilter mode
+    
+    char *pub_key = NULL;
+    char *prv_key = NULL;
+    
+    for (int i = 1; i < argc; ++i) {
+        if (strcmp(argv[i], "-w") == 0) {
+            rewrite = 1;
+        } else if (strcmp(argv[i], "-pub") == 0) {
+            ++i;
+            pub_key = argv[i];
+            //printf("public_key_file=%s\n", pub_key);
+        } else if (strcmp(argv[i], "-prv") == 0) {
+            ++i;
+            prv_key = argv[i];
+            //printf("private_key_file=%s\n", prv_key);
+        } else if (strcmp(argv[i], "-h") == 0) {
+            usage();
+        } else {
+            usage();
+        }
+    }
+    
+    abe_init(pub_key, prv_key);
+    /*
+    //test abe
+    char text[] = "Hello world!";
+    char policy[] = "CN and TLS";
+    ABEFile r = abe_encrypt((unsigned char*)text, strlen(text), policy);
+    printf("abefile.len=%d\n", r.len);
+    char* res = abe_decrypt(r.f);
+    if (res) printf("cpabe decrypt: res=%s\n", res);
+    else puts("Failed to decrypt!");
+    
+    exit(0);
+    */
+    
+    
+    if (rewrite) {//RUN libnetfilter mode
         int fd = nfqueue_init();
     	int rv;
     	char buf[4096] __attribute__ ((aligned));
