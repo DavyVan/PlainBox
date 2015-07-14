@@ -35,7 +35,7 @@ int FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, u
 {
     //decide direction
     TCPDataDirection direction;
-    if(typeid(*srcIP) == typeid(IPv4Addr) && typeid(*key.getIP1()) == typeid(IPv4Addr))
+    if(typeid(*srcIP) == typeid(IPv4Addr) && typeid(*(key.getIP1())) == typeid(IPv4Addr))
     {
         //std::cout<<"------------start handle TCP packet-----------------\n";
         if(equalto(srcIP->getAddr_raw(), key.getIP1()->getAddr_raw(), 4))
@@ -47,7 +47,7 @@ int FlowInfo::handleTCPPacket(IPAddr *srcIP, uint16_t srcPort, IPAddr *destIP, u
             direction = _2to1;
         }
     }
-    else if(typeid(*srcIP) == typeid(IPv6Addr) && typeid(*key.getIP1()) == typeid(IPv6Addr))
+    else if(typeid(*srcIP) == typeid(IPv6Addr) && typeid(*(key.getIP1())) == typeid(IPv6Addr))
     {
         if(equalto(srcIP->getAddr_raw(), key.getIP1()->getAddr_raw(), 16))
             direction = _1to2;

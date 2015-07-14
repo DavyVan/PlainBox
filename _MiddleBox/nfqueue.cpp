@@ -64,6 +64,12 @@ static void iptables_start()
     ret = system("iptables -A OUTPUT -j NFQUEUE --queue-num 0");
     
     ret = system("sysctl net.ipv4.ip_forward=1");
+
+    //IPv6
+    ret = system("ip6tables  -A FORWARD -j NFQUEUE --queue-num 0");
+    
+    ret = system("ip6tables -A INPUT -j NFQUEUE --queue-num 0");
+    ret = system("ip6tables -A OUTPUT -j NFQUEUE --queue-num 0");
 }
 
 static void iptables_stop()
@@ -76,6 +82,11 @@ static void iptables_stop()
     ret = system("iptables -D INPUT -j NFQUEUE --queue-num 0");
     ret = system("iptables -D OUTPUT -j NFQUEUE --queue-num 0");
 
+    //IPv6
+    ret = system("ip6tables  -D FORWARD -j NFQUEUE --queue-num 0");
+
+    ret = system("ip6tables -D INPUT -j NFQUEUE --queue-num 0");
+    ret = system("ip6tables -D OUTPUT -j NFQUEUE --queue-num 0");
 }
 
 int nfqueue_init()

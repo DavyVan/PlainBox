@@ -129,8 +129,6 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             //cout<<"this pkt is skiped\n";
             return;//skip this packet
         }
-
-
     }
     else if(ip_version == 6)
     {
@@ -185,13 +183,13 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             if(!ESPHandler::parseAndDecrypt(ip6hdr.getPayloadLen(), packet+14+40, plaint, plaintlen))     //NOTICE: I assumpt that no v6 options header.
                 cout<<"decryption failed!\n";
             //cout<<hex;
-            cout<<"plaint text length: "<<plaintlen<<endl;
-            for(int i = 0; i < plaintlen; i++)
-                printf("%02x", plaint[i]);
-            cout<<endl;
-            for(int i = 0; i < plaintlen; i++)
-                printf("%c", plaint[i]);
-            cout<<endl;
+            // cout<<"plaint text length: "<<plaintlen<<endl;
+            // for(int i = 0; i < plaintlen; i++)
+            //     printf("%02x", plaint[i]);
+            // cout<<endl;
+            // for(int i = 0; i < plaintlen; i++)
+            //     printf("%c", plaint[i]);
+            // cout<<endl;
 
             //If something over IPsec(ESP)
             uint8_t nextHeader = plaint[plaintlen-1];

@@ -3,7 +3,9 @@
 #include<cstring>
 #include<cstdio>
 #include<openssl/aes.h>
+#include<sys/time.h>
 #include "sshhandler.h"
+#include"abe.h"
 using namespace std;
 
 extern int hexToBinDigit(char ch);
@@ -287,6 +289,11 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     cout<<endl;
 }
 
+static long long gettime(struct timeval t1, struct timeval t2)
+{
+    return (t2.tv_sec - t1.tv_sec) * 1000000 + (t2.tv_usec - t1.tv_usec);
+}
+
 void SSHHandler::getKeys(FlowKey *flowkey)
 {
     char remote_ipaddr[50] = {0};
@@ -376,6 +383,28 @@ void SSHHandler::getKeys(FlowKey *flowkey)
             newkm->enc_iv_len_stoc = _enc_iv_len_stoc;
             if(hexToBin(_enc_iv_stoc, (char *)newkm->enc_iv_stoc) != _enc_iv_len_stoc)
                 cout<<"enc_iv_stoc hexToBin failed\n";
+
+
+            //ABE
+            int keys_len = _enc_key_len_ctos + _enc_iv_len_ctos + _enc_key_len_stoc + _enc_iv_len_stoc;
+            uint8_t keys[1000];
+            memcpy(keys, newkm->enc_key_ctos, _enc_key_len_ctos);
+            memcpy(keys + _enc_key_len_ctos, newkm->enc_iv_ctos, _enc_iv_len_ctos);
+            memcpy(keys + _enc_key_len_ctos + _enc_iv_len_ctos, newkm->enc_key_stoc, _enc_key_len_stoc);
+            memcpy(keys + _enc_key_len_ctos + _enc_iv_len_ctos + _enc_key_len_stoc, newkm->enc_iv_stoc, _enc_iv_len_stoc);
+            printf("~~~~~~~~~~~~~~~keys_len=%d\n", keys_len);
+            struct timeval t1;
+            gettimeofday(&t1, NULL);
+            ABEFile abe = abe_encrypt(keys, keys_len, "CN and (TLS)");
+            struct timeval t2;
+            gettimeofday(&t2, NULL);
+            printf("ABE-encrypt:total time=%lld\n", gettime(t1, t2));
+            struct timeval t3;
+            gettimeofday(&t3, NULL);
+            ABEFile abe2 = abe_decrypt(abe.f);
+            struct timeval t4;
+            gettimeofday(&t4, NULL);
+            printf("ABE-decrypt:total time=%lld\n", gettime(t3, t4));
         }
         else
         {

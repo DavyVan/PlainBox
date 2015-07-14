@@ -63,8 +63,18 @@ int TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint
         {
             applayerhandler = new TLSHandler();
         }
-        if(applayerhandler == NULL && (srcPort == 22 || destPort == 22))
+        else if(applayerhandler == NULL && (srcPort == 22 || destPort == 22))
             applayerhandler = new SSHHandler();
+        else if(srcPort == 80 || destPort == 80)
+        {
+            TCPDataNode *t;
+            while(node)
+            {
+                t = node->next;
+                delete node;
+                node = t;
+            }
+        }
         if(applayerhandler != NULL) {
             applayerhandler->parse(node, direction, flowkey);
             if (applayerhandler->abe.len > 0) {
@@ -92,6 +102,7 @@ int TCPHandler::reAssemblePacket(uint16_t srcPort, uint16_t destPort, const uint
             if(node->seq == p->seq)
             {
                 cout<<"This packet is skiped because there is a same packet(same seq)"<<endl;
+                delete node;
                 return 0;
             }
             q = p;

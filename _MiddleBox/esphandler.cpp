@@ -2,7 +2,9 @@
 #include<cstdio>
 #include<openssl/aes.h>
 #include<iostream>
+#include<sys/time.h>
 #include "esphandler.h"
+#include"abe.h"
 //#include"tls.h"
 using namespace std;
 
@@ -21,13 +23,13 @@ ESPHandler::~ESPHandler()
 
 bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, uint8_t* dest, unsigned int &plaintlen)
 {
-    cout<<"---------------------start parseAndDecrypt------------------\n";
+    //cout<<"---------------------start parseAndDecrypt------------------\n";
     unsigned int spi;
     memcpy(&spi, payload, 4);
     uint8_t iv[16];
     memcpy(iv, payload+8, 16);
     //spi = ntohl(spi);
-    cout<<"SPI:"<<hex<<spi<<dec<<endl;
+    //cout<<"SPI:"<<hex<<spi<<dec<<endl;
 
     //get keys
     espKeyMap_it it = espKeyMap.find(spi);
@@ -43,16 +45,21 @@ bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, ui
         return false;
     }
 
-    cout<<"-------------------------before decrypt-------------------------\n";
+    //cout<<"-------------------------before decrypt-------------------------\n";
     plaintlen = length - 8 - 16 - 12;
     //plaintlen = 40;
     decrypt(plaintlen, payload+8+16, km, iv, dest);     //NOTICE: Authentication Data have 12 bytes in this case
     return true;
 }
 
+static long long gettime(struct timeval t1, struct timeval t2)
+{
+    return (t2.tv_sec - t1.tv_sec) * 1000000 + (t2.tv_usec - t1.tv_usec);
+}
+
 KeyMaterial_ESP_Ptr ESPHandler::getKeys(unsigned int spi)
 {
-    cout<<"------------------------get keys---------------------------\n";
+    //cout<<"------------------------get keys---------------------------\n";
     const char* filepath = "/etc/ipsec.key";
     FILE *file = fopen(filepath, "r");
     if(!file)
@@ -89,6 +96,26 @@ KeyMaterial_ESP_Ptr ESPHandler::getKeys(unsigned int spi)
             cout<<_authkeylen<<"  "<<_enckeylen<<endl;
             //map it
             espKeyMap[spi] = newkmptr;
+
+
+            //ABE
+            int keys_len = _enckeylen + _authkeylen;
+            uint8_t keys[1000];
+            memcpy(keys, newkmptr->enckey, _enckeylen);
+            memcpy(keys + _enckeylen, newkmptr->authkey, _authkeylen);
+            printf("~~~~~~~~~~~~~~~keys_len=%d\n", keys_len);
+            struct timeval t1;
+            gettimeofday(&t1, NULL);
+            ABEFile abe = abe_encrypt(keys, keys_len, "CN and (TLS)");
+            struct timeval t2;
+            gettimeofday(&t2, NULL);
+            printf("ABE-encrypt:total time=%lld\n", gettime(t1, t2));
+            struct timeval t3;
+            gettimeofday(&t3, NULL);
+            ABEFile abe2 = abe_decrypt(abe.f);
+            struct timeval t4;
+            gettimeofday(&t4, NULL);
+            printf("ABE-decrypt:total time=%lld\n", gettime(t3, t4));
             return newkmptr;
         }
     }
@@ -96,7 +123,7 @@ KeyMaterial_ESP_Ptr ESPHandler::getKeys(unsigned int spi)
 
 void ESPHandler::decrypt(unsigned int length, const uint8_t* payload, KeyMaterial_ESP_Ptr km, uint8_t* iv, uint8_t* dest)
 {
-    cout<<"---------------------------starting decrypt-----------------------------\n";
+    //cout<<"---------------------------starting decrypt-----------------------------\n";
     if(strcmp(km->encalg, "aes") == 0)
     {
         uint8_t out[10000] = {0};
