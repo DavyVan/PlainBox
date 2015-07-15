@@ -26,9 +26,10 @@ int doexit = 0;
 //Do something when we get a new packet
 void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 {
-    if (doexit) {
-                    nfqueue_close();
-                    exit(0);
+    if (doexit)
+    {
+        nfqueue_close();
+        exit(0);
     }
     drop = 0;
     //get IP and TCP headers, but above all we must look which IP protocol version will use.
@@ -39,95 +40,207 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
     {
         //ipv4
         IP4Hdr ip4hdr = IP4Hdr(packet + 14);
-        TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());   //NOTICE: we only sniff tcp packet by using pcap filter
-        //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
-        //Check whether the flow exists or not
-        IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
-        uint16_t port1 = tcphdr.getSrcPort();
-        IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
-        uint16_t port2 = tcphdr.getDestPort();
-        FlowKey key = FlowKey(ip1, port1, ip2, port2);
+        if(ip4hdr.getProtocol() == 6)       //If it's TCP
+        {
+            TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());   //NOTICE: we only sniff tcp packet by using pcap filter
+            //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
-        FlowInfoPtr value = flowMgr.findFlow(key);
-        /*
-        if(value)
-        {
-            cout<<"ptr is not empty\n";
-        }
-        else
-            cout<<"flow is not exist!\n";
-        */
+            //Check whether the flow exists or not
+            IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
+            uint16_t port1 = tcphdr.getSrcPort();
+            IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
+            uint16_t port2 = tcphdr.getDestPort();
+            FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
-        //cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
-        //manage flow
-        //NOTICE: if the browser keep the tcp alive, then next test will be no tcp connection established
-        if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
-        {
-            value = flowMgr.addNewFlow(key);
-            //cout<<"new flow added  "<<endl;
-        }
-        else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
-        {
-            value->statusChange(TCP_WORKING);
-            //cout<<"flow changed to tcp_working\n";
-        }
-        else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
-        {
-            value->statusChange(TCP_TERMINATING);
-            //cout<<"flow changed to tcp_terminating\n";
-        }
-        else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
-        {
-            flowMgr.deleteFlow(key);
-            //cout<<"flow deleted normally\n";
-            return;
-        }
-        else if(value && tcphdr.isRST())
-        {
-            flowMgr.deleteFlow(key);
-            //cout<<"flow deleted c'z reseted\n";
-        }
-        else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
-        {
-            //handle tcp payload
-            const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
-            unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
-            //cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
-            //cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
-            //cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
-            //cout<<"tcp_payload_len1="<<tcp_payload_len<<endl;
-            if(tcp_payload_len != 0)
+            FlowInfoPtr value = flowMgr.findFlow(key);
+            /*
+            if(value)
             {
-                //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
-                //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
-                if (tcphdr.header.seq == 0 && tcphdr.header.check == 0) {//extra packet sent by us
-                    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
-                    value->handleKeys(tcp_payload, tcp_payload_len);
-                    return;
-                }
-                
-                
-                int ret = value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
-                if (value->abe.len > 0) {
-                    int c2s = 0;
-                    if (equalto(ip1->getAddr_raw(), value->key.getIP1()->getAddr_raw(), 4)) c2s = 1;
-                    printf("\nTCP: ret=%d  tcp_payload_len=%d pabe_l=%d\n", ret, tcp_payload_len, value->abe.len);
-                    cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
-                    if (sendTCPWithOption((packet + 14), value->abe, c2s)) {
-                        drop = 1;
+                cout<<"ptr is not empty\n";
+            }
+            else
+                cout<<"flow is not exist!\n";
+            */
+
+            //cout<<"SYN:"<<tcphdr.isSYN()<<" ACK:"<<tcphdr.isACK()<<" FIN:"<<tcphdr.isFIN()<<" RST:"<<tcphdr.isRST()<<endl;
+            //manage flow
+            //NOTICE: if the browser keep the tcp alive, then next test will be no tcp connection established
+            if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
+            {
+                value = flowMgr.addNewFlow(key);
+                //cout<<"new flow added  "<<endl;
+            }
+            else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
+            {
+                value->statusChange(TCP_WORKING);
+                //cout<<"flow changed to tcp_working\n";
+            }
+            else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
+            {
+                value->statusChange(TCP_TERMINATING);
+                //cout<<"flow changed to tcp_terminating\n";
+            }
+            else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
+            {
+                flowMgr.deleteFlow(key);
+                //cout<<"flow deleted normally\n";
+                return;
+            }
+            else if(value && tcphdr.isRST())
+            {
+                flowMgr.deleteFlow(key);
+                //cout<<"flow deleted c'z reseted\n";
+            }
+            else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
+            {
+                //handle tcp payload
+                const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
+                unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
+                //cout<<"TotalLen="<<ip4hdr.getTotalLen() <<endl;
+                //cout<<"iphdr length="<<ip4hdr.getHL()<<endl;
+                //cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+                //cout<<"tcp_payload_len1="<<tcp_payload_len<<endl;
+                if(tcp_payload_len != 0)
+                {
+                    //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                    //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                    if (tcphdr.header.seq == 0 && tcphdr.header.check == 0)  //extra packet sent by us
+                    {
+                        cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                        value->handleKeys(tcp_payload, tcp_payload_len);
+                        return;
                     }
-                    //doexit = 1;
-                    value->abe.len = 0;
-                    delete []value->abe.f;
+
+
+                    int ret = value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                    if (value->abe.len > 0)
+                    {
+                        int c2s = 0;
+                        if (equalto(ip1->getAddr_raw(), value->key.getIP1()->getAddr_raw(), 4)) c2s = 1;
+                        printf("\nTCP: ret=%d  tcp_payload_len=%d pabe_l=%d\n", ret, tcp_payload_len, value->abe.len);
+                        cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                        if (sendTCPWithOption((packet + 14), value->abe, c2s))
+                        {
+                            drop = 1;
+                        }
+                        //doexit = 1;
+                        value->abe.len = 0;
+                        delete []value->abe.f;
+                    }
+                }
+
+            }
+            else
+            {
+                //cout<<"this pkt is skiped\n";
+                return;//skip this packet
+            }
+        }
+        else if(ip4hdr.getProtocol() == 17)     //If it's UDP
+        {
+            UDPHdr _udphdr = UDPHdr(packet + 14 + ip4hdr.getHL());
+
+            IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
+            IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
+            uint16_t port1 = _udphdr.getSrcPort();
+            uint16_t port2 = _udphdr.getDestPort();
+
+            if(port1 == 500 || port2 == 500)        //If it's ISAKMP in port 500
+            {
+                FlowKey key = FlowKey(ip1, port1, ip2, port2);
+                FlowInfoPtr value = flowMgr.findFlow(key);
+
+                if(!value)
+                {
+                    value = flowMgr.addNewFlow(key);
+                    cout<<"new flow added\n";
                 }
             }
-
         }
-        else
+        else if(ip4hdr.getProtocol() == 50)     //If it's ESP
         {
-            //cout<<"this pkt is skiped\n";
-            return;//skip this packet
+            IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
+            IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
+
+            uint8_t plaint[10000] = {0};
+            unsigned int plaintlen;
+            if(!ESPHandler::parseAndDecrypt(ip4hdr.getTotalLen() - ip4hdr.getHL(), packet+14+ip4hdr.getHL(), plaint, plaintlen))
+                cout<<"decryption failed!\n";
+
+            for(int i = 0; i < plaintlen; i++)
+                printf("%c", plaint[i]);
+            cout<<endl;
+
+
+            //If something over IPsec(ESP)
+            uint8_t nextHeader = plaint[plaintlen-1];
+            uint8_t padding_len = plaint[plaintlen - 2];
+            if(nextHeader == 6)
+            {
+                cout<<"ESP is protecting TCP\n";
+                TCPHdr tcphdr = TCPHdr(plaint);
+
+                uint16_t port1 = tcphdr.getSrcPort();
+                uint16_t port2 = tcphdr.getDestPort();
+
+                /* This is a new flow, do not re-use the flow that ISAKMP have used. */
+                FlowKey key = FlowKey(ip1, port1, ip2, port2);
+                FlowInfoPtr value = flowMgr.findFlow(key);
+
+                // if(value)
+                //     cout<<"ptr is not empty\n";
+                // else
+                //     cout<<"ptr is empty\n";
+
+                //manage flow
+                if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
+                {
+                    value = flowMgr.addNewFlow(key);
+                    cout<<"new flow added  "<<endl;
+                }
+                else if(value && value->getStatus() == TCP_HANDSHAKING && tcphdr.isSYN() && tcphdr.isACK())     //tcp handshake step 2
+                {
+                    value->statusChange(TCP_WORKING);
+                    cout<<"flow changed to tcp_working\n";
+                }
+                else if(value && value->getStatus() == TCP_WORKING && tcphdr.isFIN())
+                {
+                    value->statusChange(TCP_TERMINATING);
+                    cout<<"flow changed to tcp_terminating\n";
+                }
+                else if(value && value->getStatus() == TCP_TERMINATING && tcphdr.isFIN())
+                {
+                    flowMgr.deleteFlow(key);
+                    cout<<"flow deleted normally\n";
+                    return;
+                }
+                else if(value && tcphdr.isRST())
+                {
+                    flowMgr.deleteFlow(key);
+                    cout<<"flow deleted c'z reseted\n";
+                }
+                else if(value && (value->getStatus() == TCP_WORKING || value->getStatus() == TCP_TERMINATING))
+                {
+                    //handle tcp payload
+                    const uint8_t* tcp_payload = plaint + tcphdr.getHL();
+                    unsigned int tcp_payload_len = plaintlen - padding_len - 2 - tcphdr.getHL();
+                    cout<<"tcphdr length="<<tcphdr.getHL()<<endl;
+                    cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
+                    if(tcp_payload_len != 0)
+                    {
+                        //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                        //cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                        value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                    }
+
+                }
+                else
+                {
+                    //cout<<"this pkt is skiped\n";
+                    return;     //skip this packet
+                }
+            }
         }
     }
     else if(ip_version == 6)
@@ -153,11 +266,11 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 FlowKey key = FlowKey(ip1, port1, ip2, port2);
 
                 FlowInfoPtr value = flowMgr.findFlow(key);
-/*                if(value)
-                    cout<<"ptr is not empty\n";
-                else
-                    cout<<"ptr is empty\n";
-*/
+                /*                if(value)
+                                    cout<<"ptr is not empty\n";
+                                else
+                                    cout<<"ptr is empty\n";
+                */
                 //manage flow, because it's UDP so nothing to do except adding this flow
                 if(!value)
                 {
@@ -209,10 +322,10 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 FlowKey key = FlowKey(ip1, port1, ip2, port2);
                 FlowInfoPtr value = flowMgr.findFlow(key);
 
-                if(value)
-                    cout<<"ptr is not empty\n";
-                else
-                    cout<<"ptr is empty\n";
+                // if(value)
+                //     cout<<"ptr is not empty\n";
+                // else
+                //     cout<<"ptr is empty\n";
 
                 //manage flow
                 if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
@@ -277,12 +390,12 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
             FlowKey key = FlowKey(ip1, port1, ip2, port2);
             FlowInfoPtr value = flowMgr.findFlow(key);
-/*
-            if(value)
-                cout<<"ptr is not empty\n";
-            else
-                cout<<"ptr is empty\n";
-*/
+            /*
+                        if(value)
+                            cout<<"ptr is not empty\n";
+                        else
+                            cout<<"ptr is empty\n";
+            */
             //manage flow
             //copy from corresponding part of ipv4
             if(!value && tcphdr.isSYN() && !tcphdr.isACK())     //tcp handshake step 1
@@ -320,8 +433,8 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 cout<<"tcp_payload_len="<<tcp_payload_len<<endl;
                 if(tcp_payload_len != 0)
                 {
-                   // cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
-                   // cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
+                    // cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
+                    // cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
                     value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
                 }
 
@@ -377,12 +490,14 @@ void* sslfile(void* arg)//Temp by Cong Liu
 
 int rewrite = 0;
 
-void my_function(int sig){ // can be called asynchronously
+void my_function(int sig)  // can be called asynchronously
+{
     if (rewrite) nfqueue_close();
     exit(0);
 }
 
-void usage() {
+void usage()
+{
     puts("Usage: <PROGRAM_NAME> <OPTIONS>");
     puts("options:  -h    show this message");
     puts("          -w    run  nfqueue mode");
@@ -395,29 +510,39 @@ int main(int argc, char *argv[])
 {
     char *pub_key = NULL;
     char *prv_key = NULL;
-    
-    for (int i = 1; i < argc; ++i) {
-        if (strcmp(argv[i], "-w") == 0) {
+
+    for (int i = 1; i < argc; ++i)
+    {
+        if (strcmp(argv[i], "-w") == 0)
+        {
             rewrite = 1;
-        } else if (strcmp(argv[i], "-pub") == 0) {
+        }
+        else if (strcmp(argv[i], "-pub") == 0)
+        {
             ++i;
             pub_key = argv[i];
             //printf("public_key_file=%s\n", pub_key);
-        } else if (strcmp(argv[i], "-prv") == 0) {
+        }
+        else if (strcmp(argv[i], "-prv") == 0)
+        {
             ++i;
             prv_key = argv[i];
             //printf("private_key_file=%s\n", prv_key);
-        } else if (strcmp(argv[i], "-h") == 0) {
+        }
+        else if (strcmp(argv[i], "-h") == 0)
+        {
             usage();
-        } else {
+        }
+        else
+        {
             usage();
         }
     }
-    
-    signal(SIGINT, my_function); 
+
+    signal(SIGINT, my_function);
     pthread_t tid;
     pthread_create(&tid, NULL, sslfile, NULL);
-    
+
     abe_init(pub_key, prv_key);
     /*
     //test abe
@@ -428,28 +553,32 @@ int main(int argc, char *argv[])
     ABEFile res = abe_decrypt(r.f);
     if (res.f) printf("cpabe decrypt: res=%s\n", res.f);
     else puts("Failed to decrypt!");
-    
+
     exit(0);
     */
-    
-    if (rewrite) {//RUN libnetfilter mode
+
+    if (rewrite)  //RUN libnetfilter mode
+    {
         int fd = nfqueue_init();
-    	int rv;
-    	char buf[4096] __attribute__ ((aligned));
-	    for (;;) {
-		    if ((rv = recv(fd, buf, sizeof(buf), 0)) >= 0) {
-		        //printf("recv rv=%d\n", rv);
-			    nfqueue_handle(buf, rv);
-			    continue;
-		    }
-		    if (rv < 0 && errno == ENOBUFS) {
-			    printf("losing packets!\n");
-			    continue;
-		    }
-		    perror("recv failed");
-		    break;
-	    }
-        
+        int rv;
+        char buf[4096] __attribute__ ((aligned));
+        for (;;)
+        {
+            if ((rv = recv(fd, buf, sizeof(buf), 0)) >= 0)
+            {
+                //printf("recv rv=%d\n", rv);
+                nfqueue_handle(buf, rv);
+                continue;
+            }
+            if (rv < 0 && errno == ENOBUFS)
+            {
+                printf("losing packets!\n");
+                continue;
+            }
+            perror("recv failed");
+            break;
+        }
+
     }
     //some var that pcap will use
     pcap_t *handle;
