@@ -213,7 +213,7 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         if(!km)
             getKeys(flowkey);
 
-        cout<<"-------------------------before decrypt-------------------------\n";
+        //cout<<"-------------------------before decrypt-------------------------\n";
         decrypt(rec->packet_length - mac_length[direction], ssh_payload_cipher, km, getAppLayerDataDirection(direction), &packet_length, &padding_length, ssh_payload_plain);
 
         payload_length = packet_length - padding_length - 1;
@@ -279,14 +279,14 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         cout<<"Unknown Message Code: "<<(int)message_code<<endl;
 
     //print plain text
-    cout<<"plain text in hexadecimal:\n";
-    for(int i = 0; i < payload_length; i++)
-        printf("%0x", ssh_payload_plain[i]);
-    cout<<endl;
-    cout<<"plain text in char:\n";
-    for(int i = 0; i < payload_length; i++)
-        printf("%c", ssh_payload_plain[i]);
-    cout<<endl;
+    // cout<<"plain text in hexadecimal:\n";
+    // for(int i = 0; i < payload_length; i++)
+    //     printf("%0x", ssh_payload_plain[i]);
+    // cout<<endl;
+    // cout<<"plain text in char:\n";
+    // for(int i = 0; i < payload_length; i++)
+    //     printf("%c", ssh_payload_plain[i]);
+    // cout<<endl;
 }
 
 static long long gettime(struct timeval t1, struct timeval t2)
@@ -296,6 +296,7 @@ static long long gettime(struct timeval t1, struct timeval t2)
 
 void SSHHandler::getKeys(FlowKey *flowkey)
 {
+    return;
     char remote_ipaddr[50] = {0};
     if(clientIs == 1)
         //remote_ipaddr = flowkey->getIP2()->getAddr_str().c_str();
@@ -305,7 +306,7 @@ void SSHHandler::getKeys(FlowKey *flowkey)
         //remote_ipaddr = flowkey->getIP1()->getAddr_str().c_str();
         memcpy(remote_ipaddr, flowkey->getIP1()->getAddr_str().c_str(), strlen(flowkey->getIP1()->getAddr_str().c_str()));
 
-    cout<<"------------------------get keys---------------------------\n";
+    //cout<<"------------------------get keys---------------------------\n";
     const char *filepath = "/etc/ssh.key";
     FILE *file = fopen(filepath, "r");
     if(!file)
@@ -421,11 +422,11 @@ void SSHHandler::decrypt(unsigned int length, const uint8_t *payload, KeyMateria
 {
     if(!km)
     {
-        cout<<"NO Key Material available\n";
+        //cout<<"NO Key Material available\n";
         return;
     }
-    cout<<"---------------------------starting decrypt-----------------------------\n";
-    printf(direction == CLIENT_TO_SERVER ? "client_to_server\n" : "server_to_client\n");
+    //cout<<"---------------------------starting decrypt-----------------------------\n";
+    //printf(direction == CLIENT_TO_SERVER ? "client_to_server\n" : "server_to_client\n");
     char *enc_alg_name = direction == CLIENT_TO_SERVER ? km->enc_alg_ctos : km->enc_alg_stoc;
     if(strcmp(enc_alg_name, "aes128-cbc") == 0)
     {
@@ -445,7 +446,7 @@ void SSHHandler::decrypt(unsigned int length, const uint8_t *payload, KeyMateria
         *packet_length = ntohl(*packet_length);
         memcpy(padding_length, out + 4, 1);
         //cout<<"cipher length: "<<length<<endl;
-        cout<<"packet_length: "<<*packet_length<<" padding_length: "<<(int)*padding_length<<endl;
+        //cout<<"packet_length: "<<*packet_length<<" padding_length: "<<(int)*padding_length<<endl;
         memcpy(dest, out + 5, *packet_length - *padding_length - 1);
     }
     cout<<"---------------------------ending decrypt-----------------------------\n";
