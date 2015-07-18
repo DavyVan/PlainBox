@@ -41,7 +41,7 @@ bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, ui
 
     if(!km)
     {
-        cout<<"km is NULL!\n";
+        //cout<<"km is NULL!\n";
         return false;
     }
 

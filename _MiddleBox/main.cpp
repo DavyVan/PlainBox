@@ -166,7 +166,8 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             uint8_t plaint[10000] = {0};
             unsigned int plaintlen;
             if(!ESPHandler::parseAndDecrypt(ip4hdr.getTotalLen() - ip4hdr.getHL(), packet+14+ip4hdr.getHL(), plaint, plaintlen))
-                cout<<"decryption failed!\n";
+                //cout<<"decryption failed!\n";
+                return;
 
             for(int i = 0; i < plaintlen; i++)
                 printf("%c", plaint[i]);
@@ -541,7 +542,7 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, my_function);
     pthread_t tid;
-    pthread_create(&tid, NULL, sslfile, NULL);
+    //pthread_create(&tid, NULL, sslfile, NULL);
 
     abe_init(pub_key, prv_key);
     /*
