@@ -314,18 +314,13 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else if(rec->content_type == 23)
     {
-        if (!key_ready) {
-            if(client_random && server_random && cipher_suite != 0)
-            {
-                getTLSKey(client_random, server_random, cipher_suite, flowkey, direction);
-            }
+        cout<<"APPLICATION_DATA"<<endl;
+        if (!key_ready_mbox) {
+            //May be a key share request in the future
+            cout<<"Key on the MB is not ready!\n";
         }
-    
-        //cout<<"APPLICATION_DATA "<<rec->length<<" bytes"<<endl;
-        if(/*TODO: if key exists*/1)
-        {
+        else
             decrypt(cipher_suite, NULL, rec, getAppLayerDataDirection(direction));  // You can get correct direction like this
-        }
     }
     else
     {
@@ -341,13 +336,6 @@ static long long gettime(struct timeval t1, struct timeval t2) {
 uint8_t* TLSHandler::getTLSKey(uint8_t* cr, uint8_t* sr, uint16_t cs, FlowKey* flowkey, TCPDataDirection direction)
 {
     cout<<"getTLSKey() is called!\n";
-/*    cout<<"@param cr is client_random\n";
-    cout<<"@param sr is server_random\n";
-    cout<<"@param cs is cipher_suite\n";
-    cout<<"@param flowinfo is replaced by flowkey, because .h file circle\n";
-    cout<<"@param direction indicates the data flow direction\n";*/
-    cout<<"flowkey is printed below:\n";
-    flowkey->print(direction);
 
     if (!key_ready && cipher_suite == 0xc014) {//Cipher Suite: TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA (0xc014)
         uint8_t* ms = (uint8_t*)getMasterSecret((char*)cr);
@@ -489,7 +477,7 @@ void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerData
 /*    cout<<"@param cs is cipher_suite\n";
     cout<<"@param key is TLS key which is from getTLSKey()\n";
     cout<<"@param record is TLSRec that is waiting for decrypted\n";*/
-        cout<<"APPLICATION_DATA "<<record->length<<" bytes"<<endl;
+        //cout<<"APPLICATION_DATA "<<record->length<<" bytes"<<endl;
         //printf("%x\n", record->length);
         unsigned char dec_out[123450];
         AES_KEY dec_key;

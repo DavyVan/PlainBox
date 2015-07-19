@@ -544,7 +544,7 @@ int main(int argc, char *argv[])
 
     signal(SIGINT, my_function);
     pthread_t tid;
-    //pthread_create(&tid, NULL, sslfile, NULL);
+    pthread_create(&tid, NULL, sslfile, NULL);
 
     abe_init(pub_key, prv_key);
     /*

@@ -19,7 +19,14 @@ SSHHandler::SSHHandler()
     clientIs = 0;
     mac_length[0] = mac_length[1] = 0;
     isEncrypted[0] = isEncrypted[1] = false;
+    key_ready = false;
+    key_ready_mbox = false;
     km = NULL;
+
+    target_key_len_ctos = 16;
+    target_iv_len_ctos = 16;
+    target_key_len_stoc = 16;
+    target_iv_len_stoc = 16;
 }
 
 SSHHandler::~SSHHandler()
@@ -209,12 +216,11 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
         memcpy(ssh_mac, rec->ssh_payload_padding_mac + rec->packet_length - mac_length[direction], mac_length[direction]);
         memcpy(ssh_payload_cipher, rec->ssh_payload_padding_mac, rec->packet_length - mac_length[direction]);
 
-        //prepare keys
-        if(!km)
-            getKeys(flowkey);
-
         //cout<<"-------------------------before decrypt-------------------------\n";
-        decrypt(rec->packet_length - mac_length[direction], ssh_payload_cipher, km, getAppLayerDataDirection(direction), &packet_length, &padding_length, ssh_payload_plain);
+        if(key_ready_mbox)
+            decrypt(rec->packet_length - mac_length[direction], ssh_payload_cipher, km, getAppLayerDataDirection(direction), &packet_length, &padding_length, ssh_payload_plain);
+        else
+            cout<<"No Keys for decrypting.\n";
 
         payload_length = packet_length - padding_length - 1;
     }
@@ -241,10 +247,13 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else if(message_code == 21)
     {
-        cout<<"New Keys\n";
+        cout<<"######  New Keys\n";
         isEncrypted[direction] = true;
-        mac_length[direction] = 16;     //I assume that mac is 16 bytes long
+        mac_length[direction] = 16;     //mac is 16 bytes long in test case
         changeStatus(SSH_USER_AUTHENTICATION_PROTOCOL);
+
+        if(getAppLayerDataDirection(direction) == CLIENT_TO_SERVER && !key_ready)
+            getKeys(flowkey);
     }
     else if(message_code == 30)
     {
@@ -395,16 +404,16 @@ void SSHHandler::getKeys(FlowKey *flowkey)
             printf("~~~~~~~~~~~~~~~keys_len=%d\n", keys_len);
             struct timeval t1;
             gettimeofday(&t1, NULL);
-            ABEFile abe = abe_encrypt(keys, keys_len, "CN and (TLS)");
+            abe = abe_encrypt(keys, keys_len, "CN and (TLS)");
             struct timeval t2;
             gettimeofday(&t2, NULL);
             printf("ABE-encrypt:total time=%lld\n", gettime(t1, t2));
-            struct timeval t3;
-            gettimeofday(&t3, NULL);
-            ABEFile abe2 = abe_decrypt(abe.f);
-            struct timeval t4;
-            gettimeofday(&t4, NULL);
-            printf("ABE-decrypt:total time=%lld\n", gettime(t3, t4));
+            // struct timeval t3;
+            // gettimeofday(&t3, NULL);
+            // ABEFile abe2 = abe_decrypt(abe.f);
+            // struct timeval t4;
+            // gettimeofday(&t4, NULL);
+            // printf("ABE-decrypt:total time=%lld\n", gettime(t3, t4));
         }
         else
         {
@@ -412,18 +421,35 @@ void SSHHandler::getKeys(FlowKey *flowkey)
         }
     }
     if(newkm)
+    {
         km = newkm;
+        key_ready = true;
+    }
     else
         cout<<"getKey failed\n";
 }
 
-void SSHHandler::decrypt(unsigned int length, const uint8_t *payload, KeyMaterial_SSH *km, AppLayerDataDirection direction, uint32_t *packet_length, uint8_t *padding_length,uint8_t *dest)
+int SSHHandler::handleKeys(const uint8_t *payload, unsigned int length)
 {
     if(!km)
-    {
-        //cout<<"NO Key Material available\n";
-        return;
-    }
+        km = new KeyMaterial_SSH();
+    km->enc_key_len_ctos = target_key_len_ctos;
+    memcpy(km->enc_key_ctos, payload, target_key_len_ctos);
+    km->enc_iv_len_ctos = target_iv_len_ctos;
+    memcpy(km->enc_iv_ctos, payload + target_key_len_ctos, target_iv_len_ctos);
+    km->enc_key_len_stoc = target_key_len_stoc;
+    memcpy(km->enc_key_stoc, payload + target_key_len_ctos + target_iv_len_ctos, target_key_len_stoc);
+    km->enc_iv_len_stoc = target_iv_len_stoc;
+    memcpy(km->enc_iv_stoc, payload + target_key_len_ctos + target_iv_len_ctos + target_key_len_stoc, target_iv_len_stoc);
+
+    memcpy(km->enc_alg_ctos, "aes128-cbc", strlen("aes128-cbc"));
+    memcpy(km->enc_alg_stoc, "aes128-cbc", strlen("aes128-cbc"));
+
+    key_ready_mbox = true;
+}
+
+void SSHHandler::decrypt(unsigned int length, const uint8_t *payload, KeyMaterial_SSH *km, AppLayerDataDirection direction, uint32_t *packet_length, uint8_t *padding_length,uint8_t *dest)
+{
     //cout<<"---------------------------starting decrypt-----------------------------\n";
     //printf(direction == CLIENT_TO_SERVER ? "client_to_server\n" : "server_to_client\n");
     char *enc_alg_name = direction == CLIENT_TO_SERVER ? km->enc_alg_ctos : km->enc_alg_stoc;

@@ -49,8 +49,9 @@ class SSHHandler: public AppLayerHandler
         void getKeys(FlowKey *flowkey);
         void decrypt(unsigned int length, const uint8_t *payload, KeyMaterial_SSH *km, AppLayerDataDirection direction, uint32_t *packet_length, uint8_t *padding_length,uint8_t *dest);
 
+        virtual int handleKeys(const uint8_t *payload, unsigned int length);
+
         ~SSHHandler();
-    protected:
     private:
         bool isEncrypted[2];
         unsigned int mac_length[2];
@@ -62,7 +63,14 @@ class SSHHandler: public AppLayerHandler
         int clientIs;   //These should be put into AppLayerHandler
         AppLayerDataDirection getAppLayerDataDirection(TCPDataDirection tcpdirection);
 
+        bool key_ready;
+        bool key_ready_mbox;
         KeyMaterial_SSH *km;
+
+        int target_key_len_ctos;
+        int target_iv_len_ctos;
+        int target_key_len_stoc;
+        int target_iv_len_stoc;
 };
 
 #endif // SSHHANDLER_H
