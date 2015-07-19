@@ -296,7 +296,6 @@ static long long gettime(struct timeval t1, struct timeval t2)
 
 void SSHHandler::getKeys(FlowKey *flowkey)
 {
-    return;
     char remote_ipaddr[50] = {0};
     if(clientIs == 1)
         //remote_ipaddr = flowkey->getIP2()->getAddr_str().c_str();
