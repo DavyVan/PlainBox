@@ -344,22 +344,18 @@ int sendUDP(const uint8_t* iphead, ABEFile abe, int c2s)
     }
 
     udphdr *udph = (udphdr*)(p+14+20);
-    udph->source = 6666;
-    udph->dest = 6666;
+    udph->source = htons(6666);
+    udph->dest = htons(6666);
     udph->check = 0;
 
     int tot = abe.len;
     int p_pos = 14+20+8;
 
-    p[p_pos++] = 250;
-    p[p_pos++] = 3;
-    p[p_pos++] = 1;
-
     memcpy(p + p_pos, abe.f, abe.len);
     p_pos += abe.len;
 
     iph->tot_len = htons(p_pos - 14);
-    udph->len = p_pos-14-20;
+    udph->len = htons(p_pos-14-20);
 
     len = p_pos;
 

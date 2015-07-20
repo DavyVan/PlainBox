@@ -134,18 +134,18 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             }
             else
             {
-                cout<<"this pkt is skiped\n";
-                const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
-                unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
-                if(port1 == 500 || port2 == 500)    //For ESP, special case
-                {
-                    printf("TCP::handleKEYS! len=%d\n", tcp_payload_len);
-                    ABEFile abe = abe_decrypt(tcp_payload);
-                    printf("after ABE_DEC: len=%d\n", abe.len);
-                    ESPHandler::handleKeys(abe.f, abe.len);
-                    delete []abe.f;
-                    return;
-                }
+                //cout<<"this pkt is skiped\n";
+//                const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
+//                unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
+//                if(port1 == 500 || port2 == 500)    //For ESP, special case
+//                {
+//                    printf("TCP::handleKEYS! len=%d\n", tcp_payload_len);
+//                    ABEFile abe = abe_decrypt(tcp_payload);
+//                    printf("after ABE_DEC: len=%d\n", abe.len);
+//                    ESPHandler::handleKeys(abe.f, abe.len);
+//                    delete []abe.f;
+//                    return;
+//                }
                 return;//skip this packet
             }
         }
