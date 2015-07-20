@@ -60,7 +60,7 @@ bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, ui
             struct timeval t2;
             gettimeofday(&t2, NULL);
             printf("ABE-encrypt:total time=%lld\n", gettime(t1, t2));
-            printf("abe.len = %d\n", abe.len);
+            //printf("abe.len = %d\n", abe.len);
             // struct timeval t3;
             // gettimeofday(&t3, NULL);
             // ABEFile abe2 = abe_decrypt(abe.f);

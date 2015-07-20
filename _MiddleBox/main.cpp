@@ -198,9 +198,9 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 return;
             }
 
-            for(int i = 0; i < plaintlen; i++)
-                printf("%c", plaint[i]);
-            cout<<endl;
+            // for(int i = 0; i < plaintlen; i++)
+            //     printf("%c", plaint[i]);
+            // cout<<endl;
 
             return;
             //If something over IPsec(ESP)
