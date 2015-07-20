@@ -6,6 +6,7 @@
 #include"sshhandler.h"
 #include<netinet/ip.h>
 #include<netinet/tcp.h>
+#include<netinet/udp.h>
 #include<net/ethernet.h>
 #include<netpacket/packet.h>
 #include<net/if.h>
@@ -281,13 +282,96 @@ int sendTCPWithOption_PF_PACKET(const uint8_t* ethhead, ABEFile abe, int c2s)
     memcpy(p + p_pos, abe.f, abe.len);
     p_pos += abe.len;
 
-    iph->tot_len = htons(p_pos);
+    iph->tot_len = htons(p_pos - 14);
 
     len = p_pos;
 
     //fix checksum
     tcph->check = 0;
     tcph->seq = tcph->ack_seq = 0;
+
+    //ip checksum
+    iph->check = 0;
+    uint16_t *buff = (uint16_t*)(p+14);
+    unsigned int checksum = 0;
+    for(int i = 0; i < 10; i++)
+        checksum += buff[i];
+    checksum=(checksum>>16)+(checksum & 0xffff);
+    checksum+=(checksum>>16);
+    iph->check = ~checksum;
+
+    sockaddr_ll dest;
+    memset(&dest, 0, sizeof(dest));
+    dest.sll_family = AF_PACKET;
+    dest.sll_protocol = ETHERTYPE_IP;
+    ifreq ifstruct;
+    strcpy(ifstruct.ifr_name, "eth1");
+    ioctl(fd_PF_PACKET, SIOCGIFINDEX, &ifstruct);
+    dest.sll_ifindex = ifstruct.ifr_ifindex;
+    memcpy(dest.sll_addr, ethh->ether_dhost, 6);
+    dest.sll_halen = 6;
+    if(sendto(fd_PF_PACKET, p, len, 0, (sockaddr*)&dest, sizeof(dest)) != len)
+    {
+        printf("socket4 send: Failed to send ipv4 packet len=%d %s\n", len, strerror(errno));
+    }
+    in_addr addr;
+    addr.s_addr = iph->daddr;
+    printf("sendto %s %d bytes\n", inet_ntoa(addr), len);
+    return 0;
+}
+
+int sendUDP(const uint8_t* iphead, ABEFile abe, int c2s)
+{
+    if(fd_PF_PACKET == 0)
+        init_socket_PF_PACKET();
+    uint8_t p[2000] = {0};
+    ether_header *ethh = (ether_header*)p;
+    ethh->ether_type = ntohs(ETHERTYPE_IP);
+    uint8_t ethsaddr[6] = {0x00, 0x0c, 0x29, 0x53, 0x1a, 0x6e};
+    uint8_t ethdaddr[6] = {0x00, 0x0c, 0x29, 0x95, 0x16, 0xef};
+    memcpy(ethh->ether_shost, ethsaddr, 6);
+    memcpy(ethh->ether_dhost, ethdaddr, 6);
+
+    memcpy(p+14, iphead, 20);   //IP header
+    iphdr *iph = (iphdr*)(p+14);
+    iph->protocol = 17;
+    int len = htons(iph->tot_len);
+    if(!c2s)
+    {
+        uint32_t t = iph->saddr;
+        iph->saddr = iph->daddr;
+        iph->daddr = t;
+    }
+
+    udphdr *udph = (udphdr*)(p+14+20);
+    udph->source = 6666;
+    udph->dest = 6666;
+    udph->check = 0;
+
+    int tot = abe.len;
+    int p_pos = 14+20+8;
+
+    p[p_pos++] = 250;
+    p[p_pos++] = 3;
+    p[p_pos++] = 1;
+
+    memcpy(p + p_pos, abe.f, abe.len);
+    p_pos += abe.len;
+
+    iph->tot_len = htons(p_pos - 14);
+    udph->len = p_pos-14-20;
+
+    len = p_pos;
+
+    //ip checksum
+    iph->check = 0;
+    uint16_t *buff = (uint16_t*)(p+14);
+    unsigned int checksum = 0;
+    for(int i = 0; i < 10; i++)
+        checksum += buff[i];
+    checksum=(checksum>>16)+(checksum & 0xffff);
+    checksum+=(checksum>>16);
+    iph->check = ~checksum;
 
     sockaddr_ll dest;
     memset(&dest, 0, sizeof(dest));

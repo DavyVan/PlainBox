@@ -43,7 +43,6 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
         if(ip4hdr.getProtocol() == 6)       //If it's TCP
         {
-
             TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
             cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
@@ -170,6 +169,16 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                     cout<<"new flow added\n";
                 }
             }
+            else if(port1 == 6666 || port2 == 6666)
+            {
+                printf("UDP::handleKEYs! len=%d\n", _udphdr.getLength()-8);
+                ABEFile abe = abe_decrypt(packet + 14 + ip4hdr.getHL() + 8);
+                printf("after ABE_DEC: len=%d\n", abe.len);
+                ESPHandler::handleKeys(abe.f, abe.len);
+                delete []abe.f;
+                return;
+            }
+
         }
         else if(ip4hdr.getProtocol() == 50)     //If it's ESP
         {

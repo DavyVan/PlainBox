@@ -67,14 +67,15 @@ bool ESPHandler::parseAndDecrypt(unsigned int length, const uint8_t* payload, ui
             // gettimeofday(&t4, NULL);
             // printf("ABE-decrypt:total time=%lld\n", gettime(t3, t4));
             uint8_t fake_header[100] = {0};
-            uint8_t fake_tcp_header[20] = {0x01, 0xf4, 0x01, 0xf4,  //Ports = 500
-                                           0x00, 0x00, 0x00, 0x00,  //seq = 0
-                                           0x00, 0x00, 0x00, 0x00,  //ack = 0
-                                           0x50, 0x00, 0xff, 0xff,  //hdrlen = 5(*4=20), wnd = 65535
-                                           0x00, 0x00, 0x00, 0x00};  //sum = urgptr = 0
-            memcpy(fake_header, payload-20-14, 20+14);    //IP header & ETH header
-            memcpy(fake_header + 20 + 14, fake_tcp_header, 20);  //TCP header
-            sendTCPWithOption_PF_PACKET(fake_header, abe, c2s);
+//            uint8_t fake_tcp_header[20] = {0x01, 0xf4, 0x01, 0xf4,  //Ports = 500
+//                                           0x00, 0x00, 0x00, 0x00,  //seq = 0
+//                                           0x00, 0x00, 0x00, 0x00,  //ack = 0
+//                                           0x50, 0x00, 0xff, 0xff,  //hdrlen = 5(*4=20), wnd = 65535
+//                                           0x00, 0x00, 0x00, 0x00};  //sum = urgptr = 0
+            memcpy(fake_header, payload-20, 20);    //IP header
+            //memcpy(fake_header + 20 + 14, fake_tcp_header, 20);  //TCP header
+            //sendTCPWithOption_PF_PACKET(fake_header, abe, c2s);
+            sendUDP(fake_header, abe, c2s);
             delete []abe.f;
         }
         else
