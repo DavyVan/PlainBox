@@ -39,6 +39,7 @@ class TCPHandler
 };
 
 int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s);//return !0: drop packet
+int sendTCPWithOption_PF_PACKET(const uint8_t* ethhead, ABEFile abe, int c2s);
 
 
 #endif // TCPHANDLER_H

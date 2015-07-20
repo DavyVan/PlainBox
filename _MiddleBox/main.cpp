@@ -43,8 +43,9 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
 
         if(ip4hdr.getProtocol() == 6)       //If it's TCP
         {
-            TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());   //NOTICE: we only sniff tcp packet by using pcap filter
-            //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+
+            TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
+            cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
             //Check whether the flow exists or not
             IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
@@ -117,6 +118,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                     if (value->abe.len > 0)
                     {
                         int c2s = 0;
+                        /* NOTICE: require client's IP < server's IP */
                         if (equalto(ip1->getAddr_raw(), value->key.getIP1()->getAddr_raw(), 4)) c2s = 1;
                         printf("\nTCP: ret=%d  tcp_payload_len=%d pabe_l=%d\n", ret, tcp_payload_len, value->abe.len);
                         cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
@@ -133,7 +135,18 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             }
             else
             {
-                //cout<<"this pkt is skiped\n";
+                cout<<"this pkt is skiped\n";
+                const uint8_t* tcp_payload = packet + 14 + ip4hdr.getHL() + tcphdr.getHL();
+                unsigned int tcp_payload_len = ip4hdr.getTotalLen() - ip4hdr.getHL() - tcphdr.getHL();
+                if(port1 == 500 || port2 == 500)    //For ESP, special case
+                {
+                    printf("TCP::handleKEYS! len=%d\n", tcp_payload_len);
+                    ABEFile abe = abe_decrypt(tcp_payload);
+                    printf("after ABE_DEC: len=%d\n", abe.len);
+                    ESPHandler::handleKeys(abe.f, abe.len);
+                    delete []abe.f;
+                    return;
+                }
                 return;//skip this packet
             }
         }
@@ -163,9 +176,14 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
             IPv4Addr *ip2 = new IPv4Addr(ip4hdr.getDestIP());
 
+            FlowKey key = FlowKey(ip1, 500, ip2, 500);
+            int c2s = 0;
+            /* NOTICE: require client's IP < server's IP */
+            if (equalto(ip1->getAddr_raw(), key.getIP1()->getAddr_raw(), 4)) c2s = 1;
+
             uint8_t plaint[10000] = {0};
             unsigned int plaintlen;
-            if(!ESPHandler::parseAndDecrypt(ip4hdr.getTotalLen() - ip4hdr.getHL(), packet+14+ip4hdr.getHL(), plaint, plaintlen))
+            if(!ESPHandler::parseAndDecrypt(ip4hdr.getTotalLen() - ip4hdr.getHL(), packet+14+ip4hdr.getHL(), plaint, plaintlen, c2s))
             {
                 cout<<"decryption failed!\n";
                 return;
@@ -175,7 +193,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                 printf("%c", plaint[i]);
             cout<<endl;
 
-
+            return;
             //If something over IPsec(ESP)
             uint8_t nextHeader = plaint[plaintlen-1];
             uint8_t padding_len = plaint[plaintlen - 2];
@@ -296,7 +314,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             //uint8_t *plaint = new uint8_t[10000];
             uint8_t plaint[10000] = {0};
             unsigned int plaintlen;
-            if(!ESPHandler::parseAndDecrypt(ip6hdr.getPayloadLen(), packet+14+40, plaint, plaintlen))     //NOTICE: I assumpt that no v6 options header.
+            if(!ESPHandler::parseAndDecrypt(ip6hdr.getPayloadLen(), packet+14+40, plaint, plaintlen, 0))     //NOTICE: I assumpt that no v6 options header.
                 cout<<"decryption failed!\n";
             //cout<<hex;
             // cout<<"plaint text length: "<<plaintlen<<endl;

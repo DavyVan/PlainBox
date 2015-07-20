@@ -6,6 +6,10 @@
 #include"sshhandler.h"
 #include<netinet/ip.h>
 #include<netinet/tcp.h>
+#include<net/ethernet.h>
+#include<netpacket/packet.h>
+#include<net/if.h>
+#include<sys/ioctl.h>
 #include <errno.h>
 
 using namespace std;
@@ -144,6 +148,9 @@ int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s)
     uint8_t p[2000] = {0};
     memcpy(p, iphead, 20);//IPHEAD
     iphdr* iph = (iphdr*)p;
+
+    iph->protocol = 6;  //for ESP
+
     int len = htons(iph->tot_len);
     for (int i = 0; i < 20; ++i) printf("%02x ", p[i]);printf("\n");
     printf("len=%d\n", len);
@@ -160,13 +167,13 @@ int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s)
     }
     memcpy(p+20, iphead+20, 20);//TCP
     tcphdr *tcph = (tcphdr*)(p+20);
-    
+
     if (!c2s) {
         uint16_t t = tcph->source;
         tcph->source = tcph->dest;
         tcph->dest = t;
     }
-    
+
     printf("TCPH_LEN=%d\n", tcph->doff*4);
     int optl = (tcph->doff*4) - 20;
     int tot = abe.len;
@@ -191,20 +198,20 @@ int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s)
     while ((p_pos-40)%4 != 0) p[p_pos++]=0;
     printf("new header length=%d\n", p_pos-20);
     tcph->doff = (p_pos-20) / 4;
-    
+
     memcpy(p + p_pos, abe.f, abe.len);
     p_pos += abe.len;
-    
+
     iph->tot_len = htons(p_pos);
 
     len = p_pos;
-    
+
     //fix checksum
     tcph->check = 0;
     tcph->seq = tcph->ack_seq = 0;
-    
-    
-    
+
+
+
 	struct sockaddr_in dest;
 	memset(&dest, 0, sizeof(dest));
 	dest.sin_family = AF_INET;
@@ -217,3 +224,87 @@ int sendTCPWithOption(const uint8_t* iphead, ABEFile abe, int c2s)
     return 0;
 }
 
+static int fd_PF_PACKET = 0;
+
+static void init_socket_PF_PACKET()
+{
+    fd_PF_PACKET = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_IP));
+}
+
+int sendTCPWithOption_PF_PACKET(const uint8_t* ethhead, ABEFile abe, int c2s)
+{
+    if(fd_PF_PACKET == 0)
+        init_socket_PF_PACKET();
+    uint8_t p[2000] = {0};
+    memcpy(p, ethhead, 14); //ETH header
+    ether_header* ethh = (ether_header*) p;
+    ethh->ether_type = ntohs(ETHERTYPE_IP);
+    uint8_t ethsaddr[6] = {0x00, 0x0c, 0x29, 0x53, 0x1a, 0x6e};
+    uint8_t ethdaddr[6] = {0x00, 0x0c, 0x29, 0x95, 0x16, 0xef};
+    memcpy(ethh->ether_shost, ethsaddr, 6);
+    memcpy(ethh->ether_dhost, ethdaddr, 6);
+
+    memcpy(p+14, ethhead+14, 20);   //IP header
+    iphdr* iph = (iphdr*)(p+14);
+    iph->protocol = 6;
+    int len = htons(iph->tot_len);
+    if(!c2s)
+    {
+        //reverse eth mac addr
+        uint8_t t[6];
+        memcpy(t, ethh->ether_shost, 6);
+        memcpy(ethh->ether_shost, ethh->ether_dhost, 6);
+        memcpy(ethh->ether_dhost, t, 6);
+
+        //reverse ip addr
+        uint32_t tt = iph->saddr;
+        iph->saddr = iph->daddr;
+        iph->daddr = tt;
+    }
+    memcpy(p+14+20, ethhead+14+20, 20); //TCP header
+    tcphdr *tcph = (tcphdr*)(p+14+20);
+
+//    int optl = 0;
+    int tot = abe.len;
+    int p_pos = 40+14;
+//    int a_pos = 0;
+
+    p[p_pos++] = 250;
+    p[p_pos++] = 3;
+    p[p_pos++] = 1;
+//    memcpy(p + p_pos, ethhead+14+40, optl);
+//    p_pos += optl;
+//    while((p_pos-40-14)%4 != 0)
+//        p[p_pos++] = 0;
+//    tcph->doff = (p_pos-20)/4;
+
+    memcpy(p + p_pos, abe.f, abe.len);
+    p_pos += abe.len;
+
+    iph->tot_len = htons(p_pos);
+
+    len = p_pos;
+
+    //fix checksum
+    tcph->check = 0;
+    tcph->seq = tcph->ack_seq = 0;
+
+    sockaddr_ll dest;
+    memset(&dest, 0, sizeof(dest));
+    dest.sll_family = AF_PACKET;
+    dest.sll_protocol = ETHERTYPE_IP;
+    ifreq ifstruct;
+    strcpy(ifstruct.ifr_name, "eth1");
+    ioctl(fd_PF_PACKET, SIOCGIFINDEX, &ifstruct);
+    dest.sll_ifindex = ifstruct.ifr_ifindex;
+    memcpy(dest.sll_addr, ethh->ether_dhost, 6);
+    dest.sll_halen = 6;
+    if(sendto(fd_PF_PACKET, p, len, 0, (sockaddr*)&dest, sizeof(dest)) != len)
+    {
+        printf("socket4 send: Failed to send ipv4 packet len=%d %s\n", len, strerror(errno));
+    }
+    in_addr addr;
+    addr.s_addr = iph->daddr;
+    printf("sendto %s %d bytes\n", inet_ntoa(addr), len);
+    return 0;
+}

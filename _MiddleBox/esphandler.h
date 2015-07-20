@@ -4,6 +4,7 @@
 #include<boost/enable_shared_from_this.hpp>
 #include<netinet/in.h>
 #include<map>
+#include"abe.h"
 using namespace std;
 struct KeyMaterial_ESP
 {
@@ -29,9 +30,10 @@ class ESPHandler
         ///@param   length      ESP length, including header and trailer and auth code
         ///@param   payload
         ///@param   dest        where to hold plaintext
+        ///@param   c2s         this pkt is client to server or not.
         ///@return  bool        true if decrypted successfully.
-        static bool parseAndDecrypt(unsigned int length, const uint8_t* payload, uint8_t* dest, unsigned int &plaintlen);
-
+        static bool parseAndDecrypt(unsigned int length, const uint8_t* payload, uint8_t* dest, unsigned int &plaintlen, int c2s);
+        static int handleKeys(const uint8_t *payload, unsigned int length);
 
         virtual ~ESPHandler();
     private:
