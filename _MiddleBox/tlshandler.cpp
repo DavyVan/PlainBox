@@ -199,13 +199,13 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     switch(rec->version)
     {
         case 0x0303:
-            cout<<"TLS v1.2 ";
+            //cout<<"TLS v1.2 ";
             break;
         case 0x0301:
-            cout<<"TLS v1.0 ";
+            //cout<<"TLS v1.0 ";
             break;
         default:
-            cout<<"TLS v"<<hex<<rec->version<<dec<<" ";
+            //cout<<"TLS v"<<hex<<rec->version<<dec<<" ";
             break;
     }
 
@@ -314,7 +314,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else if(rec->content_type == 23)
     {
-        cout<<"APPLICATION_DATA"<<endl;
+        //cout<<"APPLICATION_DATA"<<endl;
         if (!key_ready_mbox) {
             //May be a key share request in the future
             cout<<"Key on the MB is not ready!\n";
@@ -324,7 +324,7 @@ void TLSHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else
     {
-        cout<<"Unknown Content Type"<<endl;
+        //cout<<"Unknown Content Type"<<endl;
     }
     //TLS record is no need to delete.
 }
@@ -473,7 +473,7 @@ void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerData
     ///     cout<<"decrypt() is called! SERVER_TO_CLIENT\n";
 
     if (key_ready_mbox && direction == CLIENT_TO_SERVER) {
-        cout<<"decrypt() is called!\n";
+        //cout<<"decrypt() is called!\n";
 /*    cout<<"@param cs is cipher_suite\n";
     cout<<"@param key is TLS key which is from getTLSKey()\n";
     cout<<"@param record is TLSRec that is waiting for decrypted\n";*/
@@ -483,9 +483,9 @@ void TLSHandler::decrypt(uint16_t cs, uint8_t* key, TLSRec* record, AppLayerData
         AES_KEY dec_key;
         AES_set_decrypt_key(km.client_write_key, km.client_write_key_len * 8, &dec_key); // Size of key is in bits
 	    AES_cbc_encrypt(record->tls_payload, dec_out, record->length, &dec_key, km.client_write_iv, AES_DECRYPT);
-	    cout << "Plaintext: ";
-	    for (int i = 16; i < 200 && i < record->length; ++i) putchar(dec_out[i]);
-	    cout << endl;
+	    // cout << "Plaintext: ";
+	    // for (int i = 16; i < 200 && i < record->length; ++i) putchar(dec_out[i]);
+	    // cout << endl;
     }
 
 }

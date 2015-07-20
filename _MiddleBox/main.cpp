@@ -44,7 +44,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
         if(ip4hdr.getProtocol() == 6)       //If it's TCP
         {
             TCPHdr tcphdr = TCPHdr(packet + 14 + ip4hdr.getHL());
-            cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+            //cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
 
             //Check whether the flow exists or not
             IPv4Addr *ip1 = new IPv4Addr(ip4hdr.getSrcIP());
