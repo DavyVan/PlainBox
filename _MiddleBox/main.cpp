@@ -630,7 +630,7 @@ int main(int argc, char *argv[])
         cout<<"Couldn't find default device: "<<errbuf<<endl;
         return 2;
     }
-    device = "eth0";    //NOTICE: I assign the device directely!
+    device = "eth1";    //NOTICE: I assign the device directely!
     //open a pcap transaction
     handle = pcap_open_live(device, BUFSIZ, 0, 1000, errbuf);
     if(handle == NULL)

@@ -49,6 +49,7 @@ void* SSHHandler::parse(TCPDataNode *head, TCPDataDirection direction, FlowKey* 
             rec.packet_length = head->length;
             rec.padding_length = 0;
             memcpy(rec.ssh_payload_padding_mac, head->tcp_payload, head->length);
+            //cout<<"head->length="<<rec.packet_length<<endl;
             process(&rec, direction, flowkey);
 
             //delete current TCPDataNode and move ahead
@@ -213,6 +214,8 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     if(isEncrypted[direction])
     {
         //copy mac and cipher text into local array.
+        if(rec->packet_length < 16) //TODO: this value may be 12, if any time, need to be solved, this is a temporary solution.
+            return;
         memcpy(ssh_mac, rec->ssh_payload_padding_mac + rec->packet_length - mac_length[direction], mac_length[direction]);
         memcpy(ssh_payload_cipher, rec->ssh_payload_padding_mac, rec->packet_length - mac_length[direction]);
 
@@ -236,18 +239,18 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     uint8_t message_code;
     memcpy(&message_code, ssh_payload_plain, 1);
     if(message_code == 1)
-        cout<<"SSH_MSG_DISCONNECT\n";
+        ;//cout<<"SSH_MSG_DISCONNECT\n";
     else if(message_code == 5)
-        cout<<"SSH_MSG_SERVICE_REQUEST\n";
+        ;//cout<<"SSH_MSG_SERVICE_REQUEST\n";
     else if(message_code == 6)
-        cout<<"SSH_MSG_SERVICE_ACCEPT\n";
+        ;//cout<<"SSH_MSG_SERVICE_ACCEPT\n";
     else if(message_code == 20)
     {
-        cout<<"Key Exchange Init\n";
+        ;//cout<<"Key Exchange Init\n";
     }
     else if(message_code == 21)
     {
-        cout<<"######  New Keys\n";
+        //cout<<"######  New Keys\n";
         isEncrypted[direction] = true;
         mac_length[direction] = 16;     //mac is 16 bytes long in test case
         changeStatus(SSH_USER_AUTHENTICATION_PROTOCOL);
@@ -257,35 +260,35 @@ void SSHHandler::process(void *record, TCPDataDirection direction, FlowKey* flow
     }
     else if(message_code == 30)
     {
-        cout<<"Diffie-Hellman Key Exchange Init\n";
+        //cout<<"Diffie-Hellman Key Exchange Init\n";
         clientIs = direction == _1to2 ? 1 : 2;
     }
     else if(message_code == 31)
     {
-        cout<<"Diffie-Hellman Key Exchange Reply\n";
+        //cout<<"Diffie-Hellman Key Exchange Reply\n";
     }
-    else if(message_code == 50)
-        cout<<"SSH_MSG_USERAUTH_REQUEST\n";
-    else if(message_code == 51)
-        cout<<"SSH_MSG_USERAUTH_FAILURE\n";
-    else if(message_code == 52)
-        cout<<"SSH_MSG_USERAUTH_SUCCESS\n";
-    else if(message_code == 90)
-        cout<<"SSH_MSG_CHANNEL_OPEN\n";
-    else if(message_code == 91)
-        cout<<"SSH_MSG_CHANNEL_OPEN_CONFIRMATION\n";
-    else if(message_code == 93)
-        cout<<"SSH_MSG_CHANNEL_WINDOW_ADJUST\n";
-    else if(message_code == 94)
-        cout<<"SSH_MSG_CHANNEL_DATA\n";
-    else if(message_code == 96)
-        cout<<"SSH_MSG_CHANNEL_EOF\n";
-    else if(message_code == 97)
-        cout<<"SSH_MSG_CHANNEL_CLOSE\n";
-    else if(message_code == 98)
-        cout<<"SSH_MSG_CHANNEL_REQUEST\n";
-    else
-        cout<<"Unknown Message Code: "<<(int)message_code<<endl;
+    // else if(message_code == 50)
+    //     cout<<"SSH_MSG_USERAUTH_REQUEST\n";
+    // else if(message_code == 51)
+    //     cout<<"SSH_MSG_USERAUTH_FAILURE\n";
+    // else if(message_code == 52)
+    //     cout<<"SSH_MSG_USERAUTH_SUCCESS\n";
+    // else if(message_code == 90)
+    //     cout<<"SSH_MSG_CHANNEL_OPEN\n";
+    // else if(message_code == 91)
+    //     cout<<"SSH_MSG_CHANNEL_OPEN_CONFIRMATION\n";
+    // else if(message_code == 93)
+    //     cout<<"SSH_MSG_CHANNEL_WINDOW_ADJUST\n";
+    // else if(message_code == 94)
+    //     cout<<"SSH_MSG_CHANNEL_DATA\n";
+    // else if(message_code == 96)
+    //     cout<<"SSH_MSG_CHANNEL_EOF\n";
+    // else if(message_code == 97)
+    //     cout<<"SSH_MSG_CHANNEL_CLOSE\n";
+    // else if(message_code == 98)
+    //     cout<<"SSH_MSG_CHANNEL_REQUEST\n";
+    // else
+    //     cout<<"Unknown Message Code: "<<(int)message_code<<endl;
 
     //print plain text
     // cout<<"plain text in hexadecimal:\n";
@@ -368,7 +371,7 @@ void SSHHandler::getKeys(FlowKey *flowkey)
 
         if(strcmp(remote_ipaddr, _remote_ipaddr) == 0)      //If remote_ipaddr matches this line
         {
-            cout<<"Line Matched\n"<<remote_ipaddr<<endl;
+            //cout<<"Line Matched\n"<<remote_ipaddr<<endl;
             if(newkm)
                 delete(newkm);
             newkm = new KeyMaterial_SSH();
@@ -451,30 +454,35 @@ int SSHHandler::handleKeys(const uint8_t *payload, unsigned int length)
 void SSHHandler::decrypt(unsigned int length, const uint8_t *payload, KeyMaterial_SSH *km, AppLayerDataDirection direction, uint32_t *packet_length, uint8_t *padding_length,uint8_t *dest)
 {
     //cout<<"---------------------------starting decrypt-----------------------------\n";
-    //printf(direction == CLIENT_TO_SERVER ? "client_to_server\n" : "server_to_client\n");
-    char *enc_alg_name = direction == CLIENT_TO_SERVER ? km->enc_alg_ctos : km->enc_alg_stoc;
+    //printf(direction == CLIENT_TO_SERVER ? "###client_to_server\n" : "###server_to_client\n");
+    char *enc_alg_name = (direction == CLIENT_TO_SERVER ? km->enc_alg_ctos : km->enc_alg_stoc);
     if(strcmp(enc_alg_name, "aes128-cbc") == 0)
     {
 
         uint8_t out[70000] = {0};
         AES_KEY aes_key;
-        AES_set_decrypt_key(direction == CLIENT_TO_SERVER ? km->enc_key_ctos : km->enc_key_stoc,
+        AES_set_decrypt_key((direction == CLIENT_TO_SERVER ? km->enc_key_ctos : km->enc_key_stoc),
             (direction == CLIENT_TO_SERVER ? km->enc_key_len_ctos : km->enc_key_len_stoc)*8,
             &aes_key);
         //uint8_t ecount_buf[AES_BLOCK_SIZE] = {0};
         //unsigned int num = 0;
 
         //AES_ctr128_encrypt(payload, out, length, &aes_key, direction == CLIENT_TO_SERVER ? km->enc_iv_ctos : km->enc_iv_stoc, ecount_buf, &num);
-        AES_cbc_encrypt(payload, out, length, &aes_key, direction == CLIENT_TO_SERVER ? km->enc_iv_ctos : km->enc_iv_stoc, AES_DECRYPT);
+        AES_cbc_encrypt(payload, out, length, &aes_key, (direction == CLIENT_TO_SERVER ? km->enc_iv_ctos : km->enc_iv_stoc), AES_DECRYPT);
 
         memcpy(packet_length, out, 4);
         *packet_length = ntohl(*packet_length);
         memcpy(padding_length, out + 4, 1);
+        if(*packet_length > 1500)   //TODO: This is a temporary solution of long SSH Record.
+        {
+            *packet_length = length;
+            *padding_length = 0;
+        }
         //cout<<"cipher length: "<<length<<endl;
-        //cout<<"packet_length: "<<*packet_length<<" padding_length: "<<(int)*padding_length<<endl;
-        memcpy(dest, out + 5, *packet_length - *padding_length - 1);
+        //cout<<"length:"<<length<<" packet_length: "<<*packet_length<<" padding_length: "<<(int)*padding_length<<endl;
+        memcpy(dest, out + 5, (*packet_length) - (*padding_length) - 1);
     }
-    cout<<"---------------------------ending decrypt-----------------------------\n";
+    //cout<<"---------------------------ending decrypt-----------------------------\n";
 }
 
 AppLayerDataDirection SSHHandler::getAppLayerDataDirection(TCPDataDirection tcpdirection)
