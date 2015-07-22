@@ -2,7 +2,9 @@
 apt-get install bison << EF
 y
 EF
-apt-get install g++
+apt-get install g++ << EF
+y
+EF
 apt-get install make
 apt-get install flex << EF
 y
