@@ -20,6 +20,7 @@ cd ..
 wget http://ufpr.dl.sourceforge.net/project/boost/boost/1.58.0/boost_1_58_0.tar.gz
 tar -zxvf boost_1_58_0.tar.gz
 rm boost_1_58_0.tar.gz
+chmod 777 boost_1_58_0/
 apt-get install libssl-dev << EF
 y
 EF
