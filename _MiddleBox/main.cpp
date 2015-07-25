@@ -202,7 +202,7 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
             //     printf("%c", plaint[i]);
             // cout<<endl;
 
-            return;
+            //return;
             //If something over IPsec(ESP)
             uint8_t nextHeader = plaint[plaintlen-1];
             uint8_t padding_len = plaint[plaintlen - 2];
@@ -261,7 +261,32 @@ void got_packet(u_char *args, const pcap_pkthdr *header, const u_char *packet)
                     {
                         //cout<<"-------------------------Flow ID: "<<value->ID<<"-----------------------------\n";
                         //cout<<*ip1<<":"<<port1<<" --> "<<*ip2<<":"<<port2<<endl;
-                        value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                        //value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                        
+                        if (tcphdr.header.seq == 0 && tcphdr.header.check == 0)  //extra packet sent by us
+                        {
+                            cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                            value->handleKeys(tcp_payload, tcp_payload_len);
+                            return;
+                        }
+
+
+                        int ret = value->handleTCPPacket(ip1, port1, ip2, port2, tcp_payload, tcp_payload_len, tcphdr.getSeq());
+                        if (value->abe.len > 0)
+                        {
+                            int c2s = 0;
+                            /* NOTICE: require client's IP < server's IP */
+                            if (equalto(ip1->getAddr_raw(), value->key.getIP1()->getAddr_raw(), 4)) c2s = 1;
+                            printf("\nTCP: ret=%d  tcp_payload_len=%d pabe_l=%d\n", ret, tcp_payload_len, value->abe.len);
+                            cout<<ip4hdr.getSrcIPstr()<<":"<<tcphdr.getSrcPort()<<" --> "<<ip4hdr.getDestIPstr()<<":"<<tcphdr.getDestPort()<<endl;
+                            if (sendTCPWithOption((packet + 14), value->abe, c2s))
+                            {
+                                drop = 1;
+                            }
+                            //doexit = 1;
+                            value->abe.len = 0;
+                            delete []value->abe.f;
+                        }
                     }
 
                 }
