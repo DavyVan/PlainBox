@@ -1,6 +1,6 @@
 CC     = g++
 CFLAGS = -lpcap -I /home/fanquan/Desktop/boost_1_58_0 -lpthread -lssl -lcrypto -lnetfilter_queue -lglib-2.0 -I/usr/include/glib-2.0 -I/usr/lib/x86_64-linux-gnu/glib-2.0/include -I/usr/include/pbc -I/usr/local/include/pbc -lbswabe -Wl,-rpath /usr/local/lib -lpbc -lgmp
-Target = _Middlebox
+Target = PlainBox
 Obj    = ip4hdr.o tcphdr.o main.o flowkey.o flowmgr.o flowinfo.o ipaddr.o applayerhandler.o tcphandler.o tlshandler.o tls.o ip6hdr.o udphdr.o esphandler.o sshhandler.o nfqueue.o abe.o
 
 $(Target): $(Obj) abe_common.o abe_policy.o
